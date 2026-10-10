@@ -1,0 +1,2369 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRURU MUSEUM — Executive Presentation Web App</title>
+  
+  <!-- Google Fonts: Chakra Petch, IBM Plex Sans Thai, IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,400;1,700&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- D3.js for Knowledge Graph -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* ============================================================
+       GRURU MUSEUM DESIGN SYSTEM & TOKENS (ตาม Project Brief)
+       ============================================================ */
+    :root {
+      --gr-void: #0B0B0F;
+      --gr-graphite: #17171F;
+      --gr-grid: #2C2C3A;
+      --gr-fog: #8A8A9E;
+      --gr-paper: #F2EDE3;
+      
+      --gr-lime: #D7FF3A;
+      --gr-ember: #FF5A1F;
+      --gr-violet: #8C6BFF;
+      --gr-cyan: #2EE6FF;
+      
+      /* Categories */
+      --cat-sci: #2EE6FF;
+      --cat-hist: #FF5A1F;
+      --cat-tech: #8C6BFF;
+      --cat-cult: #FFC233;
+      --cat-bio: #34E89E;
+      --cat-art: #FF5FA2;
+
+      /* UI Tokens */
+      --bg-color: var(--gr-void);
+      --card-bg: var(--gr-graphite);
+      --text-main: var(--gr-paper);
+      --text-muted: var(--gr-fog);
+      --border-color: var(--gr-grid);
+      --time-warp: linear-gradient(135deg, #FF5A1F, #8C6BFF);
+      --lime-glow: 0 0 24px rgba(215, 255, 58, 0.35);
+      --cyan-glow: 0 0 24px rgba(46, 230, 255, 0.35);
+      
+      --font-display: 'Chakra Petch', sans-serif;
+      --font-body: 'IBM Plex Sans Thai', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    html.light {
+      --bg-color: #F6F3ED;
+      --card-bg: #FFFFFF;
+      --text-main: #14141E;
+      --text-muted: #55556A;
+      --border-color: #DDD8CE;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.7;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    /* Specimen Grid Background */
+    .specimen-grid {
+      background-image: 
+        radial-gradient(circle at 1px 1px, rgba(215, 255, 58, 0.12) 1px, transparent 0),
+        linear-gradient(to right, rgba(44, 44, 58, 0.35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(44, 44, 58, 0.35) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* HUD Chamfered Card (Cut 45 deg corners) */
+    .hud-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+      position: relative;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hud-card:hover {
+      border-color: var(--gr-lime);
+      box-shadow: 4px 4px 0 var(--gr-ember);
+    }
+
+    .hud-card-static {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+      position: relative;
+    }
+
+    /* Specimen Label */
+    .specimen-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gr-fog);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      background: rgba(44, 44, 58, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 2px;
+    }
+    .specimen-label .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gr-lime);
+      box-shadow: 0 0 8px var(--gr-lime);
+    }
+
+    /* Primary CTA Button */
+    .btn-lime {
+      background: var(--gr-lime);
+      color: #000;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 22px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    }
+    .btn-lime:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--gr-ember);
+    }
+    .btn-lime:active {
+      transform: translate(0, 0);
+      box-shadow: 1px 1px 0 var(--gr-ember);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 8px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .btn-ghost:hover {
+      border-color: var(--gr-lime);
+      color: var(--gr-lime);
+      background: rgba(215, 255, 58, 0.05);
+    }
+
+    /* Headings */
+    h1, h2, h3, h4, .display-font {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .gradient-text {
+      background: var(--time-warp);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Presentation Screen Container */
+    #app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+
+    /* Top Navigation Bar */
+    header#top-bar {
+      height: 56px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(11, 11, 15, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    /* Slide Viewport */
+    #deck-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.98) translateY(12px);
+      transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 32px 48px 40px 48px;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      z-index: 10;
+    }
+
+    /* Progress indicator */
+    #progress-rail {
+      height: 3px;
+      width: 100%;
+      background: rgba(44, 44, 58, 0.5);
+      position: relative;
+    }
+    #progress-bar {
+      height: 100%;
+      width: 10%;
+      background: var(--gr-lime);
+      box-shadow: 0 0 10px var(--gr-lime);
+      transition: width 0.3s ease;
+    }
+
+    /* Bottom Control Bar */
+    footer#bottom-bar {
+      height: 60px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-color);
+      background: rgba(11, 11, 15, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    /* Speaker Notes Drawer */
+    #notes-drawer {
+      position: absolute;
+      bottom: 60px;
+      right: 24px;
+      width: 440px;
+      max-height: 400px;
+      background: var(--gr-graphite);
+      border: 1px solid var(--gr-lime);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 4px 4px 0 var(--gr-ember);
+      z-index: 200;
+      transform: translateY(120%);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 20px;
+      clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    }
+    #notes-drawer.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Overview Modal */
+    #overview-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 11, 15, 0.96);
+      backdrop-filter: blur(20px);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      padding: 40px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #overview-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      overflow-y: auto;
+      padding: 20px 0;
+      flex: 1;
+    }
+    .overview-card {
+      background: var(--gr-graphite);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .overview-card:hover, .overview-card.current {
+      border-color: var(--gr-lime);
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(215, 255, 58, 0.2);
+    }
+
+    /* Quick 3-Second KPI Badges */
+    .kpi-metric-badge {
+      display: flex;
+      flex-direction: column;
+      padding: 14px 18px;
+      background: rgba(23, 23, 31, 0.85);
+      border-left: 3px solid var(--gr-lime);
+      border-top: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .kpi-metric-badge.orange { border-left-color: var(--gr-ember); }
+    .kpi-metric-badge.cyan { border-left-color: var(--gr-cyan); }
+    .kpi-metric-badge.violet { border-left-color: var(--gr-violet); }
+
+    /* Category Pill */
+    .cat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      padding: 4px 10px;
+      border-radius: 100px;
+      border: 1px solid currentColor;
+      font-weight: 500;
+    }
+
+    /* Interactive Booming Canvas Container */
+    #booming-container {
+      width: 100%;
+      height: 480px;
+      position: relative;
+      background: radial-gradient(circle at center, rgba(30, 30, 42, 0.7) 0%, rgba(11, 11, 15, 0.95) 70%);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Full Knowledge Graph Canvas */
+    #graph-container {
+      width: 100%;
+      height: 520px;
+      position: relative;
+      background: #0D0D12;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Scanline effect overlay */
+    .scanlines {
+      position: relative;
+    }
+    .scanlines::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(11, 11, 15, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--gr-lime);
+    }
+
+    /* Utility */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="specimen-grid">
+
+  <div id="app-container">
+    
+    <!-- Top Progress Bar -->
+    <div id="progress-rail">
+      <div id="progress-bar"></div>
+    </div>
+
+    <!-- Top Header -->
+    <header id="top-bar">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="goToSlide(0)">
+          <img src="assets/gruru_logo.jpg" alt="GRURU Logo" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--gr-lime);">
+          <span style="font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 0.05em;">
+            GRURU <span style="color: var(--gr-lime);">MUSEUM</span>
+          </span>
+        </div>
+        <div class="specimen-label" style="display: none; @media(min-width: 768px){display:inline-flex;}">
+          <span class="badge-dot"></span>
+          <span>EXECUTIVE PITCH DECK // 2026</span>
+        </div>
+      </div>
+
+      <!-- Navigation & Mode Controls -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <!-- Current Slide Indicator -->
+        <span id="slide-counter" style="font-family: var(--font-mono); font-size: 13px; color: var(--gr-fog);">
+          HALL <span id="current-slide-num" style="color: var(--gr-lime); font-weight: 600;">01</span> / 10
+        </span>
+
+        <!-- Sound Toggle -->
+        <button id="btn-audio" class="btn-ghost" onclick="toggleAudio()" title="เปิด/ปิด เสียงเอฟเฟกต์">
+          <i data-lucide="volume-2" style="width: 15px; height: 15px;"></i>
+          <span style="font-size: 11px;">AUDIO</span>
+        </button>
+
+        <!-- Speaker Notes Toggle -->
+        <button class="btn-ghost" onclick="toggleNotes()" title="บทพูดสำหรับผู้นำเสนอ (N)">
+          <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
+          <span style="font-size: 11px;">NOTES</span>
+        </button>
+
+        <!-- Image Archive Gallery -->
+        <button class="btn-ghost" onclick="toggleArchive()" title="คลังรูปภาพ Knowledge Graph และสื่อประกอบทั้งหมด">
+          <i data-lucide="image" style="width: 15px; height: 15px;"></i>
+          <span style="font-size: 11px;">ARCHIVE</span>
+        </button>
+
+        <!-- Slide Overview -->
+        <button class="btn-ghost" onclick="toggleOverview()" title="ดูสไลด์ทั้งหมด (O)">
+          <i data-lucide="grid" style="width: 15px; height: 15px;"></i>
+          <span style="font-size: 11px;">HALLS</span>
+        </button>
+
+        <!-- Fullscreen -->
+        <button class="btn-ghost" onclick="toggleFullscreen()" title="โหมดเต็มหน้าจอ (F)">
+          <i data-lucide="maximize" style="width: 15px; height: 15px;"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Slide Viewport -->
+    <main id="deck-viewport">
+
+      <!-- ==========================================
+           SLIDE 01: TITLE & EXECUTIVE VISION
+           ========================================== -->
+      <section class="slide active" data-hall="HALL 01" data-title="Executive Vision">
+        <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; height: 100%; align-items: center;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+              <span class="specimen-label">
+                <span class="badge-dot"></span>
+                GRM-2026-EXEC-001 // CONCEPT PROPOSAL
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-ember);">
+                FUTURE ARCHAEOLOGY LAB
+              </span>
+            </div>
+
+            <h1 style="font-size: clamp(2.5rem, 5vw, 4.2rem); margin-bottom: 16px; text-transform: uppercase;">
+              GRURU <span style="color: var(--gr-lime); text-shadow: var(--lime-glow);">MUSEUM</span>
+            </h1>
+
+            <div style="font-family: var(--font-display); font-size: clamp(1.2rem, 2.2vw, 1.8rem); font-weight: 600; margin-bottom: 24px; line-height: 1.3;" class="gradient-text">
+              “New Knowledge. New Storytelling. Built for Everyday Living.”
+            </div>
+
+            <p style="font-size: 18px; color: var(--text-muted); max-width: 620px; margin-bottom: 32px; line-height: 1.8;">
+              พิพิธภัณฑ์ความรู้ดิจิทัลแนวคิด <strong>Future Archaeology</strong> ที่เปลี่ยนความรู้ซ่อนเร้นในอดีตให้กลายเป็น <span style="color: var(--gr-lime);">Interactive Knowledge Graph</span> และเรื่องเล่าใหม่ที่คนรุ่นใหม่นำไปปรับใช้ในชีวิตประจำวันได้จริงทุกวัน
+            </p>
+
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+              <button class="btn-lime" onclick="nextSlide()">
+                <span>เริ่มการนำเสนอ</span>
+                <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+              </button>
+              <button class="btn-ghost" onclick="goToSlide(4)">
+                <i data-lucide="zap" style="width: 16px; height: 16px; color: var(--gr-lime);"></i>
+                <span>ดูสด Live Data Booming</span>
+              </button>
+            </div>
+
+            <!-- Executive 3-Second Digest -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px;">
+              <div class="kpi-metric-badge">
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">ESTIMATED ENGAGEMENT</span>
+                <span style="font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--gr-lime);">3–5 นาที</span>
+                <span style="font-size: 12px; color: var(--text-muted);">ดูจบ เข้าใจ ไวกว่านั่งเรียน</span>
+              </div>
+              <div class="kpi-metric-badge cyan">
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">PROVENANCE TRUST</span>
+                <span style="font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--gr-cyan);">100%</span>
+                <span style="font-size: 12px; color: var(--text-muted);">ระบุแหล่งอ้างอิงทุกโหนด</span>
+              </div>
+              <div class="kpi-metric-badge orange">
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">CORE AUDIENCE</span>
+                <span style="font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--gr-ember);">22–40 ปี</span>
+                <span style="font-size: 12px; color: var(--text-muted);">คนรุ่นใหม่ & ผู้สร้างสรรค์</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exhibition Hall Hero Graphic -->
+          <div class="hud-card" style="padding: 10px; background: rgba(23, 23, 31, 0.7); overflow: hidden; position: relative;">
+            <div class="scanlines" style="border-radius: 4px; overflow: hidden; position: relative;">
+              <img src="assets/gruru_museum_hall.jpg" alt="GRURU Exhibition Hall" style="width: 100%; height: 420px; object-fit: cover; display: block; border-radius: 4px; filter: contrast(1.05) brightness(0.95);">
+              
+              <!-- Floating HUD Tag -->
+              <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; background: rgba(11, 11, 15, 0.85); backdrop-filter: blur(8px); padding: 12px 16px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 10px; color: var(--gr-lime);">DIGITAL ARCHAEOLOGY HALL 01</div>
+                  <div style="font-size: 13px; font-weight: 600;">Holographic Knowledge Sphere Matrix</div>
+                </div>
+                <span class="badge" style="background: rgba(215, 255, 58, 0.15); color: var(--gr-lime); border: 1px solid var(--gr-lime);">ONLINE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 02: THE PROBLEM & CORE VALUE GAP
+           ========================================== -->
+      <section class="slide" data-hall="HALL 02" data-title="Market Opportunity">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 8px;">
+              <span class="badge-dot"></span>
+              GAP ANALYSIS // WHY NOW?
+            </div>
+            <h2>ช่องว่างในตลาด: ทำไมต้องเป็น GRURU MUSEUM?</h2>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-fog);">PERCEPTUAL MATRIX</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: stretch; flex: 1;">
+          <!-- Left: 3-Second Comparison -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="hud-card" style="padding: 20px; border-left: 4px solid #FF3B4E;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <h4 style="color: #FF3B4E; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="video" style="width: 18px; height: 18px;"></i>
+                  คลิปสั้นในโซเชียลมีเดีย (Short-form Content)
+                </h4>
+                <span class="badge" style="background: rgba(255, 59, 78, 0.15); color: #FF3B4E;">เร็วแต่ตื้น</span>
+              </div>
+              <p style="font-size: 15px; color: var(--text-muted);">
+                ดูเพลิน เสพติดง่าย แต่ไม่มีหลักฐานอ้างอิง ข้อมูลกระจัดกระจาย ไม่เชื่อมโยง และลืมทันทีใน 5 นาที
+              </p>
+            </div>
+
+            <div class="hud-card" style="padding: 20px; border-left: 4px solid var(--gr-fog);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <h4 style="color: var(--gr-paper); display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="book" style="width: 18px; height: 18px;"></i>
+                  สารานุกรมออนไลน์ & ตำราวิชาการ
+                </h4>
+                <span class="badge" style="background: rgba(138, 138, 158, 0.15); color: var(--gr-fog);">ลึกแต่แห้ง</span>
+              </div>
+              <p style="font-size: 15px; color: var(--text-muted);">
+                ข้อมูลครบถ้วน แต่น่าเบื่อ ตัวหนังสือแน่น เหมือนนั่งเรียนในห้องเลกเชอร์ และนำมาปรับใช้ในชีวิตจริงยาก
+              </p>
+            </div>
+
+            <div class="hud-card" style="padding: 24px; border: 2px solid var(--gr-lime); background: rgba(23, 23, 31, 0.95); box-shadow: 4px 4px 0 var(--gr-ember);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="color: var(--gr-lime); display: flex; align-items: center; gap: 10px;">
+                  <i data-lucide="sparkles" style="width: 22px; height: 22px;"></i>
+                  คำตอบ: GRURU MUSEUM
+                </h3>
+                <span class="badge" style="background: var(--gr-lime); color: #000; font-weight: 700;">BLUE OCEAN</span>
+              </div>
+              <p style="font-size: 16px; color: var(--gr-paper); margin-bottom: 12px; font-weight: 500;">
+                “สนุกเหมือนดูงานศิลปะ แต่มีหลักฐานอ้างอิง — เข้าใจผ่านเครือข่ายความรู้ พร้อมการ์ดที่หยิบไปใช้ในชีวิตได้ทันที”
+              </p>
+              <div style="display: flex; gap: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--gr-cyan);">
+                <span>✓ Interactive Graph</span>
+                <span>✓ Data Booming</span>
+                <span>✓ Everyday Takeaway</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Visual Perceptual Map Canvas -->
+          <div class="hud-card" style="padding: 24px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-lime);">PERCEPTUAL POSITIONING MAP</span>
+              <span style="font-size: 12px; color: var(--text-muted);">3-Second Comprehension</span>
+            </div>
+
+            <!-- Perceptual Map SVG Chart -->
+            <div style="flex: 1; position: relative; min-height: 320px; border: 1px dashed var(--border-color); background: rgba(11, 11, 15, 0.5); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+              
+              <!-- Axes -->
+              <div style="position: absolute; left: 10%; right: 10%; top: 50%; height: 1px; background: var(--border-color);"></div>
+              <div style="position: absolute; top: 10%; bottom: 10%; left: 50%; width: 1px; background: var(--border-color);"></div>
+
+              <!-- Labels -->
+              <span style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 11px; color: var(--gr-cyan);">
+                ▲ เครือข่ายโต้ตอบได้ (Interactive Network)
+              </span>
+              <span style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">
+                ▼ เล่าแบบเส้นตรง (Linear / Text)
+              </span>
+              <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">
+                ◄ เนื้อหาวิชาการ (Academic Dry)
+              </span>
+              <span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember);">
+                สนุก / เสพง่าย (Engaging) ►
+              </span>
+
+              <!-- Quadrant items -->
+              <!-- Traditional Encyclopedia: Top-Left or Bottom-Left -->
+              <div style="position: absolute; top: 62%; left: 22%; transform: translate(-50%, -50%); text-align: center; opacity: 0.65;">
+                <div style="width: 12px; height: 12px; background: var(--gr-fog); border-radius: 50%; margin: 0 auto 4px;"></div>
+                <span style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">ตำรา & Wiki</span>
+              </div>
+
+              <!-- Short Video Reels: Bottom-Right -->
+              <div style="position: absolute; top: 72%; left: 78%; transform: translate(-50%, -50%); text-align: center; opacity: 0.65;">
+                <div style="width: 12px; height: 12px; background: #FF3B4E; border-radius: 50%; margin: 0 auto 4px;"></div>
+                <span style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">คลิปสั้น TikTok/Reels</span>
+              </div>
+
+              <!-- GRURU MUSEUM: Top-Right Sweet Spot -->
+              <div style="position: absolute; top: 25%; left: 75%; transform: translate(-50%, -50%); text-align: center;">
+                <div style="position: relative; width: 44px; height: 44px; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center;">
+                  <div style="position: absolute; inset: 0; background: rgba(215, 255, 58, 0.25); border-radius: 50%; animation: pulse 2s infinite;"></div>
+                  <img src="assets/gruru_logo.jpg" style="width: 32px; height: 32px; border-radius: 4px; border: 2px solid var(--gr-lime); position: relative; z-index: 2;">
+                </div>
+                <span style="font-size: 13px; font-family: var(--font-display); font-weight: 700; color: var(--gr-lime); background: rgba(11,11,15,0.8); padding: 2px 8px; border-radius: 3px; border: 1px solid var(--gr-lime);">
+                  GRURU MUSEUM ★
+                </span>
+                <div style="font-size: 10px; font-family: var(--font-mono); color: var(--gr-paper); margin-top: 2px;">
+                  สนุก มีหลักฐาน + เป็นเครือข่าย
+                </div>
+              </div>
+            </div>
+            
+            <div style="margin-top: 14px; font-size: 13px; color: var(--text-muted); text-align: center;">
+              แก่นแบรนด์: <strong style="color: var(--gr-paper);">“อดีตคือข้อมูล อนาคตคือเรื่องเล่า”</strong> (Past is Data, Future is Story)
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 03: TARGET PERSONAS (AUDIENCE)
+           ========================================== -->
+      <section class="slide" data-hall="HALL 03" data-title="Target Personas">
+        <div style="margin-bottom: 24px;">
+          <div class="specimen-label" style="margin-bottom: 8px;">
+            <span class="badge-dot"></span>
+            SEGMENTATION // 22–40 YEARS OLD
+          </div>
+          <h2>กลุ่มเป้าหมาย 3 บุคลิก: Insight ร่วม “อยากรู้ลึก แต่ไม่อยากรู้สึกว่านั่งเรียน”</h2>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; flex: 1;">
+          <!-- Persona 1 -->
+          <div class="hud-card" style="padding: 24px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <span class="cat-pill" style="color: var(--gr-lime); border-color: var(--gr-lime);">
+                PERSONA 01
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-fog);">AGE 22–27</span>
+            </div>
+
+            <h3 style="font-size: 22px; color: var(--gr-lime); margin-bottom: 6px;">Curious Starter</h3>
+            <div style="font-size: 13px; font-family: var(--font-mono); color: var(--gr-cyan); margin-bottom: 16px;">
+              นักศึกษาจบใหม่ / First Jobber
+            </div>
+
+            <p style="font-size: 14.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; flex: 1;">
+              ใช้สมาร์ตโฟนเป็นหลัก ชอบของสวยงามแปลกใหม่ อยากมีความรู้รอบตัวที่เอาไปคุยกับเพื่อนหรือแชร์ลงโซเชียลได้ทันที
+            </p>
+
+            <div style="background: rgba(11, 11, 15, 0.6); padding: 14px; border: 1px solid var(--border-color); border-radius: 4px;">
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember); margin-bottom: 4px;">
+                FEATURE REQUIREMENT
+              </div>
+              <ul style="font-size: 13px; color: var(--gr-paper); padding-left: 18px; line-height: 1.6;">
+                <li>เรื่องเล่าที่อ่านจบใน 3–5 นาที</li>
+                <li>การ์ดขนาด 1080×1350 px สำหรับโพสต์ IG/X</li>
+                <li>UX แบบ Mobile-First โหลดเร็ว</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Persona 2 -->
+          <div class="hud-card" style="padding: 24px; display: flex; flex-direction: column; border-color: var(--gr-violet);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <span class="cat-pill" style="color: var(--gr-violet); border-color: var(--gr-violet);">
+                PERSONA 02
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-fog);">AGE 25–34</span>
+            </div>
+
+            <h3 style="font-size: 22px; color: var(--gr-violet); margin-bottom: 6px;">Creative Professional</h3>
+            <div style="font-size: 13px; font-family: var(--font-mono); color: var(--gr-cyan); margin-bottom: 16px;">
+              ดีไซเนอร์ / มาร์เก็ตเตอร์ / ครีเอเตอร์
+            </div>
+
+            <p style="font-size: 14.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; flex: 1;">
+              มองหาแรงบันดาลใจไอเดียข้ามศาสตร์ (Cross-disciplinary) ต้องการข้อมูลดิบและแผนผังความคิดเพื่อนำไปต่อยอดในงานสร้างสรรค์
+            </p>
+
+            <div style="background: rgba(11, 11, 15, 0.6); padding: 14px; border: 1px solid var(--border-color); border-radius: 4px;">
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember); margin-bottom: 4px;">
+                FEATURE REQUIREMENT
+              </div>
+              <ul style="font-size: 13px; color: var(--gr-paper); padding-left: 18px; line-height: 1.6;">
+                <li>Interactive Graph เจาะลึกความสัมพันธ์</li>
+                <li>ระบบบันทึกคอลเลกชันส่วนตัว (Pin Board)</li>
+                <li>ชุดข้อมูลดาวน์โหลดเป็น JSON/CSV ได้</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Persona 3 -->
+          <div class="hud-card" style="padding: 24px; display: flex; flex-direction: column; border-color: var(--gr-ember);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <span class="cat-pill" style="color: var(--gr-ember); border-color: var(--gr-ember);">
+                PERSONA 03
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-fog);">AGE 30–40</span>
+            </div>
+
+            <h3 style="font-size: 22px; color: var(--gr-ember); margin-bottom: 6px;">Lifelong Learner</h3>
+            <div style="font-size: 13px; font-family: var(--font-mono); color: var(--gr-cyan); margin-bottom: 16px;">
+              คนทำงาน / พ่อแม่รุ่นใหม่
+            </div>
+
+            <p style="font-size: 14.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; flex: 1;">
+              ชอบสืบค้นรากเหง้าที่มาของสิ่งรอบตัว เช่น ประวัติศาสตร์อาหาร ภูมิปัญญาสุขภาพ และวิทยาศาสตร์การใช้ชีวิต เน้นความถูกต้องจริงใจ
+            </p>
+
+            <div style="background: rgba(11, 11, 15, 0.6); padding: 14px; border: 1px solid var(--border-color); border-radius: 4px;">
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember); margin-bottom: 4px;">
+                FEATURE REQUIREMENT
+              </div>
+              <ul style="font-size: 13px; color: var(--gr-paper); padding-left: 18px; line-height: 1.6;">
+                <li>การ์ดสรุป Everyday Takeaway ชัดเจน</li>
+                <li>ฟอนต์อ่านสบายตา & โหมดถนอมสายตา</li>
+                <li>แหล่งอ้างอิงและประวัติศาสตร์ที่เชื่อถือได้</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; padding: 14px 20px; background: rgba(44, 44, 58, 0.3); border: 1px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <i data-lucide="shield-check" style="color: var(--gr-lime); width: 20px; height: 20px;"></i>
+            <span style="font-size: 14px; font-weight: 500;">ทุกหน้ายึดหลัก: โหมดมืดเป็นค่าเริ่มต้น, เปิดดูแหล่งอ้างอิงใน 1 คลิก, และตอบโจทย์วิถีชีวิตคนเมือง</span>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-lime);">ACCESSIBLE & ACTIONABLE</span>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 04: THE 5-STAGE KNOWLEDGE PIPELINE
+           ========================================== -->
+      <section class="slide" data-hall="HALL 04" data-title="Knowledge Pipeline">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 8px;">
+              <span class="badge-dot"></span>
+              METHODOLOGY // MISSION ARCHITECTURE
+            </div>
+            <h2>เส้นทางความรู้ 5 ขั้น (The 5-Stage Knowledge Pipeline)</h2>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-cyan);">
+            FROM RAW ARCHIVE TO EVERYDAY LIFE
+          </span>
+        </div>
+
+        <!-- 5 Steps Flow -->
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px;">
+          
+          <div class="hud-card" style="padding: 16px; border-top: 3px solid var(--gr-ember);">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember); margin-bottom: 4px;">STAGE 01</div>
+            <h4 style="font-size: 18px; margin-bottom: 8px;">Excavate</h4>
+            <div style="font-size: 13px; font-weight: 600; color: var(--gr-paper); margin-bottom: 8px;">ขุดค้นความรู้</div>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              คัดสรรจากประวัติศาสตร์ วิทยาศาสตร์ และภูมิปัญญาโบราณ ระบุแหล่งที่มา (Provenance) 100%
+            </p>
+          </div>
+
+          <div class="hud-card" style="padding: 16px; border-top: 3px solid var(--gr-cyan);">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-cyan); margin-bottom: 4px;">STAGE 02</div>
+            <h4 style="font-size: 18px; margin-bottom: 8px;">Decode</h4>
+            <div style="font-size: 13px; font-weight: 600; color: var(--gr-paper); margin-bottom: 8px;">ถอดรหัสข้อมูล</div>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              แปลงข้อมูลดิบเป็น Knowledge Graph Nodes & Relations ข้ามยุคสมัยและข้ามศาสตร์
+            </p>
+          </div>
+
+          <div class="hud-card" style="padding: 16px; border-top: 3px solid var(--gr-violet);">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-violet); margin-bottom: 4px;">STAGE 03</div>
+            <h4 style="font-size: 18px; margin-bottom: 8px;">Retell</h4>
+            <div style="font-size: 13px; font-weight: 600; color: var(--gr-paper); margin-bottom: 8px;">เล่าใหม่ด้วยภาพ</div>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              Visual Storytelling สไตล์ Modern Art ที่สวยสะกดสายตา ย่อยง่าย ดูจบในไม่กี่นาที
+            </p>
+          </div>
+
+          <div class="hud-card" style="padding: 16px; border-top: 3px solid var(--gr-lime);">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime); margin-bottom: 4px;">STAGE 04</div>
+            <h4 style="font-size: 18px; margin-bottom: 8px;">Connect</h4>
+            <div style="font-size: 13px; font-weight: 600; color: var(--gr-paper); margin-bottom: 8px;">เชื่อมโยงเปิดกว้าง</div>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              เปิดสัมผัสผ่าน Data Booming & Interactive Graph ให้ผู้ใช้สำรวจความสัมพันธ์ได้เอง
+            </p>
+          </div>
+
+          <div class="hud-card" style="padding: 16px; border-top: 3px solid #34E89E;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: #34E89E; margin-bottom: 4px;">STAGE 05</div>
+            <h4 style="font-size: 18px; margin-bottom: 8px;">Apply</h4>
+            <div style="font-size: 13px; font-weight: 600; color: var(--gr-paper); margin-bottom: 8px;">นำไปใช้จริง</div>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              ปิดท้ายทุกนิทรรศการด้วย <strong>Everyday Takeaway</strong> สรุปสิ่งที่นำไปทำได้ทันทีในชีวิต
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Visual Pipeline Banner -->
+        <div class="hud-card" style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; background: rgba(23, 23, 31, 0.9);">
+          <div>
+            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-lime); margin-bottom: 6px;">
+              SYSTEM ARCHITECTURE INTEGRATION
+            </div>
+            <h3 style="margin-bottom: 12px;">รวมข้อมูลจากหลายแหล่ง สู่โครงข่ายความรู้แบบบูรณาการ</h3>
+            <p style="font-size: 14.5px; color: var(--text-muted); line-height: 1.7; margin-bottom: 16px;">
+              ข้อมูลจากหนังสือโบราณ ตำราวิทยาศาสตร์ ฐานข้อมูลดิบ และประสบการณ์ชุมชน ถูกจัดเรียงเข้าสู่โมเดล Knowledge Graph ศูนย์กลาง ช่วยให้ผู้ใช้ “เห็นภาพรวม” และ “ค้นพบความเชื่อมโยงที่คาดไม่ถึง” ภายใน 3 วินาที
+            </p>
+            <div style="display: flex; gap: 8px;">
+              <span class="badge" style="background: rgba(255, 90, 31, 0.15); color: var(--gr-ember);">Books</span>
+              <span class="badge" style="background: rgba(46, 230, 255, 0.15); color: var(--gr-cyan);">Textbooks</span>
+              <span class="badge" style="background: rgba(140, 107, 255, 0.15); color: var(--gr-violet);">Databases</span>
+              <span class="badge" style="background: rgba(52, 232, 158, 0.15); color: #34E89E;">Community</span>
+            </div>
+          </div>
+          <div style="border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color);">
+            <img src="assets/knowledge_graph_2.png" alt="Knowledge Pipeline Integration" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 05: SIGNATURE 1 — DATA BOOMING (LIVE DEMO)
+           ========================================== -->
+      <section class="slide" data-hall="HALL 05" data-title="Data Booming Live Demo">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 6px;">
+              <span class="badge-dot"></span>
+              SIGNATURE EXPERIENCE 01 // DATA BOOMING
+            </div>
+            <h2>Data Booming: จุดชนวนระเบิดความรู้ เชื่อมโยงใน 3 วินาที (Interactive)</h2>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn-lime" style="padding: 6px 14px; font-size: 12px;" onclick="resetBooming()">
+              <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
+              <span>RESET DEMO</span>
+            </button>
+            <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-lime); background: rgba(215, 255, 58, 0.1); padding: 4px 10px; border: 1px solid var(--gr-lime); border-radius: 3px;">
+              CLICK NODES TO EXPAND
+            </span>
+          </div>
+        </div>
+
+        <!-- Booming Interactive Canvas & Info Deck -->
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; flex: 1;">
+          <!-- Left: Canvas Area -->
+          <div id="booming-container" style="display: flex; flex-direction: column; position: relative;">
+            <svg id="booming-svg" style="width: 100%; height: 100%; cursor: crosshair;"></svg>
+            
+            <!-- Live Status HUD Overlay -->
+            <div style="position: absolute; top: 16px; left: 16px; pointer-events: none; background: rgba(11,11,15,0.75); backdrop-filter: blur(8px); padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 4px;">
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--gr-fog);">BOOMING STATUS</div>
+              <div style="font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--gr-lime);">
+                LAYER DEPTH: <span id="booming-layer-text">LEVEL 1 (SEED)</span>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-cyan);">
+                NODES ACTIVE: <span id="booming-count-text">1</span> / 18
+              </div>
+            </div>
+
+            <!-- Hint overlay -->
+            <div style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 12px; color: var(--gr-paper); background: rgba(11,11,15,0.85); padding: 6px 16px; border: 1px dashed var(--gr-lime); border-radius: 20px; pointer-events: none;">
+              💡 คลิกที่โหนดกลาง “พืชและสังเคราะห์แสง” เพื่อระเบิดแตกกิ่งก้าน (Booming)
+            </div>
+          </div>
+
+          <!-- Right: Information & Specimen Detail Panel -->
+          <div class="hud-card" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="specimen-label" style="margin-bottom: 12px;">
+                <span class="badge-dot"></span>
+                <span id="detail-code">GRM-SPEC-001</span>
+              </div>
+
+              <h3 id="detail-title" style="font-size: 20px; color: var(--gr-lime); margin-bottom: 8px;">
+                พืชและชีวสังเคราะห์
+              </h3>
+              <div id="detail-era" style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-ember); margin-bottom: 12px;">
+                ERA: EVOLUTIONARY BIOLOGY // 3.8B YEARS
+              </div>
+
+              <p id="detail-desc" style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                เมื่อคลิกที่โหนดนี้ พลังงานจะระเบิดออกสู่ 6 ปัจจัยหลัก: แสงแดด, คลอโรพลาสต์, ออกซิเจน, กลูโคส, สิ่งแวดล้อม และโครงสร้างพืช
+              </p>
+
+              <div style="background: rgba(11, 11, 15, 0.7); border: 1px solid var(--border-color); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                <div style="font-family: var(--font-mono); font-size: 10px; color: var(--gr-lime); margin-bottom: 4px;">
+                  EVERYDAY TAKEAWAY
+                </div>
+                <div id="detail-takeaway" style="font-size: 13px; color: var(--gr-paper); font-weight: 500;">
+                  การวางต้นไม้ในห้องทำงานช่วยดูดซับ CO₂ และกระตุ้นสมาธิการทำงานได้สูงขึ้นถึง 15%
+                </div>
+              </div>
+            </div>
+
+            <!-- 3-Second Rule highlight box -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 14px;">
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog); margin-bottom: 4px;">
+                WHY IT HOOKS USERS (3-SECOND LAW)
+              </div>
+              <div style="font-size: 12.5px; color: var(--text-muted);">
+                ผู้ใช้เข้าใจภาพรวมและเหตุผลเชื่อมโยงได้ทันทีโดยไม่ต้องอ่านข้อความ 20 หน้า จังหวะระเบิด 40ms กระตุ้น Dopamine แห่งการค้นพบ!
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 06: SIGNATURE 2 — FULL KNOWLEDGE GRAPH
+           ========================================== -->
+      <section class="slide" data-hall="HALL 06" data-title="Interactive Knowledge Graph">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 6px;">
+              <span class="badge-dot"></span>
+              SIGNATURE EXPERIENCE 02 // FORCE-DIRECTED GRAPH
+            </div>
+            <h2>Full Interactive Knowledge Graph (6 หมวดความรู้ข้ามยุคสมัย)</h2>
+          </div>
+          
+          <!-- Category Filters -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button class="cat-pill active" onclick="filterGraph('all')" style="color: var(--gr-paper); border-color: var(--gr-paper); background: rgba(255,255,255,0.1);">ทั้งหมด</button>
+            <button class="cat-pill" onclick="filterGraph('science')" style="color: var(--cat-sci); border-color: var(--cat-sci);">วิทยาศาสตร์</button>
+            <button class="cat-pill" onclick="filterGraph('history')" style="color: var(--cat-hist); border-color: var(--cat-hist);">ประวัติศาสตร์</button>
+            <button class="cat-pill" onclick="filterGraph('tech')" style="color: var(--cat-tech); border-color: var(--cat-tech);">เทคโนโลยี</button>
+            <button class="cat-pill" onclick="filterGraph('culture')" style="color: var(--cat-cult); border-color: var(--cat-cult);">วัฒนธรรม</button>
+            <button class="cat-pill" onclick="filterGraph('bio')" style="color: var(--cat-bio); border-color: var(--cat-bio);">ธรรมชาติ</button>
+            <button class="cat-pill" onclick="filterGraph('art')" style="color: var(--cat-art); border-color: var(--cat-art);">ศิลปะ</button>
+          </div>
+        </div>
+
+        <!-- Graph Viewport -->
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 20px; flex: 1;">
+          <div id="graph-container">
+            <svg id="force-graph-svg" style="width: 100%; height: 100%;"></svg>
+
+            <!-- Floating Controls -->
+            <div style="position: absolute; bottom: 16px; left: 16px; display: flex; gap: 8px;">
+              <button class="btn-ghost" style="padding: 6px 12px; font-size: 11px; background: rgba(11,11,15,0.8);" onclick="zoomInGraph()">
+                <i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i> ZOOM +
+              </button>
+              <button class="btn-ghost" style="padding: 6px 12px; font-size: 11px; background: rgba(11,11,15,0.8);" onclick="zoomOutGraph()">
+                <i data-lucide="zoom-out" style="width: 14px; height: 14px;"></i> ZOOM -
+              </button>
+              <button class="btn-ghost" style="padding: 6px 12px; font-size: 11px; background: rgba(11,11,15,0.8);" onclick="resetGraph()">
+                <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> RESET
+              </button>
+            </div>
+
+            <!-- Shape legend -->
+            <div style="position: absolute; top: 16px; right: 16px; background: rgba(11,11,15,0.8); backdrop-filter: blur(8px); padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-mono); font-size: 11px;">
+              <div style="color: var(--gr-fog); margin-bottom: 6px;">SHAPE CODE (WCAG ACCESSIBLE)</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <span style="color: var(--cat-sci);">● วงกลม = วิทย์</span>
+                <span style="color: var(--cat-hist);">⬡ หกเหลี่ยม = ประวัติศาสตร์</span>
+                <span style="color: var(--cat-tech);">■ สี่เหลี่ยม = เทคโนฯ</span>
+                <span style="color: var(--cat-cult);">▲ สามเหลี่ยม = วัฒนธรรม</span>
+                <span style="color: var(--cat-bio);">◆ ข้าวหลามตัด = ชีวิต</span>
+                <span style="color: var(--cat-art);">○ วงแหวน = ศิลปะ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Specimen Detail Drawer -->
+          <div class="hud-card" id="graph-node-details" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="specimen-label" id="kg-node-code">GRM-1872-SCI-014</span>
+                <span class="badge" id="kg-node-cat" style="background: rgba(46, 230, 255, 0.15); color: var(--gr-cyan);">SCIENCE</span>
+              </div>
+
+              <h3 id="kg-node-title" style="font-size: 22px; margin-bottom: 6px; color: var(--gr-paper);">
+                Neural Plasticity
+              </h3>
+              <div id="kg-node-era" style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-ember); margin-bottom: 14px;">
+                ERA: MODERN NEUROSCIENCE // 1970s
+              </div>
+
+              <p id="kg-node-desc" style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                ความสามารถของสมองในการปรับเปลี่ยนและสร้างโครงข่ายประสาทใหม่ตลอดช่วงอายุขัย พัฒนามาจากทฤษฎีจิตวิทยาโบราณและการสังเกตพฤติกรรมมนุษย์
+              </p>
+
+              <div style="background: rgba(11, 11, 15, 0.7); border: 1px solid var(--border-color); padding: 14px; border-radius: 4px; margin-bottom: 16px;">
+                <div style="font-family: var(--font-mono); font-size: 10px; color: var(--gr-lime); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i>
+                  EVERYDAY TAKEAWAY
+                </div>
+                <div id="kg-node-takeaway" style="font-size: 13px; color: var(--gr-paper);">
+                  การเรียนรู้ทักษะใหม่เพียงวันละ 15 นาที ช่วยป้องกันภาวะสมองล้าและชะลอความเสื่อมของระบบความจำได้ชัดเจน
+                </div>
+              </div>
+
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">
+                <div>SOURCES: <span id="kg-node-sources" style="color: var(--gr-cyan);">Nature Neuroscience (2018)</span></div>
+                <div>RELATIONS: <span id="kg-node-rel" style="color: var(--gr-paper);">5 connected entities</span></div>
+              </div>
+            </div>
+
+            <button class="btn-lime" style="width: 100%; justify-content: center; margin-top: 16px;" onclick="triggerBoomFromKG()">
+              <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+              <span>ขยายโหนดนี้เป็น Data Booming</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 07: BUILT FOR EVERYDAY LIVING
+           ========================================== -->
+      <section class="slide" data-hall="HALL 07" data-title="Built for Everyday Living">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 8px;">
+              <span class="badge-dot"></span>
+              CORE PILLAR // ACTIONABLE WISDOM
+            </div>
+            <h2>“Built for Everyday Living” — เปลี่ยนความรู้โบราณ สู่ชีวิตคนเมือง</h2>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-lime);">
+            EVERYDAY TAKEAWAYS ENGINE
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; flex: 1;">
+          <!-- Visual: Living Room with Holographic Insights -->
+          <div class="hud-card" style="padding: 12px; background: rgba(23, 23, 31, 0.7); overflow: hidden;">
+            <div class="scanlines" style="border-radius: 4px; overflow: hidden; position: relative;">
+              <img src="assets/gruru_everyday_living.jpg" alt="Everyday Living with GRURU Insights" style="width: 100%; height: 380px; object-fit: cover; display: block; border-radius: 4px;">
+              <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; background: rgba(11,11,15,0.9); backdrop-filter: blur(8px); padding: 12px 16px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 10px; color: var(--gr-lime);">AMBIENT DISPLAY IN HOME</div>
+                  <div style="font-size: 13px; font-weight: 600;">Ancient Artifacts Decoding to Modern Wellness</div>
+                </div>
+                <span class="badge" style="background: rgba(52, 232, 158, 0.2); color: #34E89E; border: 1px solid #34E89E;">PRACTICAL</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards & Real Examples -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="hud-card" style="padding: 18px; border-left: 4px solid var(--gr-ember);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember);">CASE STUDY 01 // FOOD & BIOLOGY</span>
+                <span class="badge" style="background: rgba(255, 90, 31, 0.15); color: var(--gr-ember);">FERMENTATION</span>
+              </div>
+              <h4 style="font-size: 16px; margin-bottom: 6px;">การหมักดองยุคเมโสโปเตเมีย สู่ Gut-Brain Axis ยุคใหม่</h4>
+              <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 8px;">
+                ความรู้ 4,000 ปีก่อนเรื่องการถนอมอาหาร เมื่อถอดรหัสผ่านจุลชีววิทยาปัจจุบัน พบว่าแบคทีเรียแลคโตบาซิลลัสช่วยสร้างสารสื่อประสาท GABA ลดความวิตกกังวล
+              </p>
+              <div style="font-size: 13px; color: var(--gr-lime); font-weight: 500;">
+                ★ Takeaway: ทานอาหารหมักธรรมชาติ 1 ช้อนต่อวัน ช่วยให้หลับลึกขึ้นและลดคอร์ติซอล
+              </div>
+            </div>
+
+            <div class="hud-card" style="padding: 18px; border-left: 4px solid var(--gr-cyan);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-cyan);">CASE STUDY 02 // ARCHITECTURE & FOCUS</span>
+                <span class="badge" style="background: rgba(46, 230, 255, 0.15); color: var(--gr-cyan);">BIOPHILIC DESIGN</span>
+              </div>
+              <h4 style="font-size: 16px; margin-bottom: 6px;">สวนลอยฟ้าบาบิโลน สู่การจัดโต๊ะทำงานลด Burnout</h4>
+              <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 8px;">
+                หลักสัดส่วนการมองเห็นต้นไม้ใบเขียวในระยะสายตา 20 องศา ช่วยลดอัตราการเต้นของหัวใจและฟื้นฟู Cognitive Fatigue
+              </p>
+              <div style="font-size: 13px; color: var(--gr-lime); font-weight: 500;">
+                ★ Takeaway: จัดมุมโต๊ะทำงานให้มองเห็นสีเขียวของใบไม้ทุกๆ 20 นาที เพิ่มสมาธิขึ้น 18%
+              </div>
+            </div>
+
+            <div class="hud-card" style="padding: 16px; background: rgba(215, 255, 58, 0.05); border: 1px dashed var(--gr-lime);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <i data-lucide="share-2" style="color: var(--gr-lime); width: 22px; height: 22px;"></i>
+                <div style="font-size: 13.5px;">
+                  <strong>ระบบ Export การ์ด 1080×1350 px อัตโนมัติ:</strong> ผู้ใช้สามารถกด Save การ์ดความรู้พร้อมดีไซน์ Modern Art ไปแชร์ใน Instagram / LinkedIn ได้ในคลิกเดียว
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 08: DESIGN SYSTEM & VISUAL IDENTITY
+           ========================================== -->
+      <section class="slide" data-hall="HALL 08" data-title="Design System & Tokens">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 8px;">
+              <span class="badge-dot"></span>
+              VISUAL IDENTITY // DESIGN LANGUAGE
+            </div>
+            <h2>Design Tokens: “Past Warm × Future Electric”</h2>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-fog);">
+            70–20–10 RATIO // WCAG AA COMPLIANT
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px;">
+          <!-- Color 1: Void Black -->
+          <div class="hud-card" style="padding: 16px;">
+            <div style="height: 48px; background: #0B0B0F; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 10px;"></div>
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600;">Void Black</div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">#0B0B0F (70% Canvas)</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">พื้นหลังหลักโหมดมืดแบบห้องแล็บ</div>
+          </div>
+
+          <!-- Color 2: Specimen Lime -->
+          <div class="hud-card" style="padding: 16px;">
+            <div style="height: 48px; background: #D7FF3A; border-radius: 4px; margin-bottom: 10px; box-shadow: var(--lime-glow);"></div>
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--gr-lime);">Specimen Lime</div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">#D7FF3A (Primary CTA)</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">สีเอกลักษณ์อันดับ 1 + โหนดที่เลือก</div>
+          </div>
+
+          <!-- Color 3: Ember Orange -->
+          <div class="hud-card" style="padding: 16px;">
+            <div style="height: 48px; background: #FF5A1F; border-radius: 4px; margin-bottom: 10px;"></div>
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--gr-ember);">Ember Orange</div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">#FF5A1F (Past & Shadow)</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">สีแทนอดีต & เงาแข็ง 4px ของปุ่ม</div>
+          </div>
+
+          <!-- Color 4: Quantum Violet & Cyan -->
+          <div class="hud-card" style="padding: 16px;">
+            <div style="height: 48px; background: linear-gradient(135deg, #FF5A1F, #8C6BFF); border-radius: 4px; margin-bottom: 10px;"></div>
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--gr-violet);">Time Warp Gradient</div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">Ember → Quantum Violet</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">การเดินทางจากอดีตสู่อนาคต</div>
+          </div>
+        </div>
+
+        <!-- Typography & UI Patterns -->
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px;">
+          <!-- Typography Triad -->
+          <div class="hud-card" style="padding: 20px;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime); margin-bottom: 12px;">
+              TYPOGRAPHY SYSTEM // 3 COMPLEMENTARY FAMILIES
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="font-family: var(--font-display); font-size: 18px; font-weight: 700;">Chakra Petch (หัวเรื่อง / Display)</span>
+                  <span class="badge" style="background: rgba(215,255,58,0.1); color: var(--gr-lime);">WEIGHT 600–700</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted);">รูปทรงเหลี่ยมเรขาคณิต ให้อารมณ์ Sci-Fi ชัดเจนและทรงพลัง</div>
+              </div>
+
+              <div style="padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="font-family: var(--font-body); font-size: 16px; font-weight: 600;">IBM Plex Sans Thai (เนื้อหา / Body)</span>
+                  <span class="badge" style="background: rgba(46,230,255,0.1); color: var(--gr-cyan);">WEIGHT 400–500</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted);">อารมณ์เอกสารวิทยาศาสตร์ อ่านง่าย สบายตาบนทุกหน้าจอ</div>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="font-family: var(--font-mono); font-size: 14px;">IBM Plex Mono (รหัส / พิกัด / ป้าย)</span>
+                  <span class="badge" style="background: rgba(255,90,31,0.1); color: var(--gr-ember);">SPECIMEN CODES</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted);">ให้ความรู้สึกเหมือนป้ายกำกับวัตถุโบราณในแล็บอนาคต</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UI Patterns -->
+          <div class="hud-card" style="padding: 20px;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember); margin-bottom: 12px;">
+              SIGNATURE UI SIGNATURES
+            </div>
+
+            <ul style="font-size: 13.5px; color: var(--text-main); display: flex; flex-direction: column; gap: 10px; list-style: none;">
+              <li style="display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="check" style="width: 16px; height: 16px; color: var(--gr-lime);"></i>
+                <span><strong>Specimen Grid:</strong> ตาราง 48px พร้อมเครื่องหมาย + ทุกจุดตัด</span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="check" style="width: 16px; height: 16px; color: var(--gr-lime);"></i>
+                <span><strong>Chamfered 45°:</strong> การ์ดตัดมุม 14px บนซ้ายและล่างขวา</span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="check" style="width: 16px; height: 16px; color: var(--gr-lime);"></i>
+                <span><strong>Hard Drop Shadow:</strong> เงาคม 4px 4px 0 #FF5A1F เมื่อ Hover</span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="check" style="width: 16px; height: 16px; color: var(--gr-lime);"></i>
+                <span><strong>WCAG AA:</strong> ค่า Contrast Ratio สีกระดาษบนพื้นดำ 16.8:1</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 09: TECH STACK & PHASED ROADMAP
+           ========================================== -->
+      <section class="slide" data-hall="HALL 09" data-title="Roadmap & Architecture">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 8px;">
+              <span class="badge-dot"></span>
+              DEV EXECUTION // PHASED DELIVERY
+            </div>
+            <h2>แผนงานการพัฒนา 4 รอบ (Google Antigravity Architecture)</h2>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-cyan);">
+            NEXT.JS + D3-FORCE + TAILWIND CSS
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 24px;">
+          <!-- Sprint 1 -->
+          <div class="hud-card" style="padding: 20px; border-top: 3px solid var(--gr-lime);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime);">PHASE 01</span>
+              <span class="badge" style="background: rgba(215, 255, 58, 0.2); color: var(--gr-lime);">COMPLETED</span>
+            </div>
+            <h4 style="font-size: 17px; margin-bottom: 8px;">Design Tokens & Style Guide</h4>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              แปลงสีเป็น CSS Variables, ติดตั้งฟอนต์ภาษาไทย Chakra Petch & IBM Plex, สร้าง Specimen Grid และตรวจสอบ WCAG AA Contrast
+            </p>
+          </div>
+
+          <!-- Sprint 2 -->
+          <div class="hud-card" style="padding: 20px; border-top: 3px solid var(--gr-cyan);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-cyan);">PHASE 02</span>
+              <span class="badge" style="background: rgba(46, 230, 255, 0.2); color: var(--gr-cyan);">SPRINT 2</span>
+            </div>
+            <h4 style="font-size: 17px; margin-bottom: 8px;">Components & Patterns</h4>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              สร้างพาเนล HUD การ์ดตัดมุม, แถบสถานะ Specimen Label, เอฟเฟกต์ Booming Burst และ Time Rings สำหรับสลับหน้าจอ
+            </p>
+          </div>
+
+          <!-- Sprint 3 -->
+          <div class="hud-card" style="padding: 20px; border-top: 3px solid var(--gr-violet);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-violet);">PHASE 03</span>
+              <span class="badge" style="background: rgba(140, 107, 255, 0.2); color: var(--gr-violet);">SPRINT 3</span>
+            </div>
+            <h4 style="font-size: 17px; margin-bottom: 8px;">Exhibition Halls</h4>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              พัฒนาหน้าหลัก Home, HALL 01 Exhibitions, Data Booming Guide, Everyday Lab และหน้า About ภัณฑารักษ์แห่งอนาคต
+            </p>
+          </div>
+
+          <!-- Sprint 4 -->
+          <div class="hud-card" style="padding: 20px; border-top: 3px solid var(--gr-ember);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember);">PHASE 04</span>
+              <span class="badge" style="background: rgba(255, 90, 31, 0.2); color: var(--gr-ember);">SPRINT 4</span>
+            </div>
+            <h4 style="font-size: 17px; margin-bottom: 8px;">Full Graph Engine</h4>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              สร้าง D3.js Force Simulation พร้อมฐานข้อมูลตัวอย่าง 50+ โหนด, ตัวกรองหมวดหมู่, ตัวเลื่อนเวลา และระบบบันทึกคอลเลกชัน
+            </p>
+          </div>
+        </div>
+
+        <!-- System Architecture Callout -->
+        <div class="hud-card" style="padding: 20px; background: rgba(23, 23, 31, 0.85); display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="width: 44px; height: 44px; background: rgba(215, 255, 58, 0.1); border: 1px solid var(--gr-lime); display: flex; align-items: center; justify-content: center; border-radius: 6px;">
+              <i data-lucide="cpu" style="color: var(--gr-lime); width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <div style="font-family: var(--font-display); font-size: 16px; font-weight: 700;">Google Antigravity Continuous Integration</div>
+              <div style="font-size: 13px; color: var(--text-muted);">
+                เก็บบันทึก Project Brief ใน <code>.agent/rules/project_brief.md</code> เพื่อให้ Agent ยึดถือข้อกำหนดตลอดทุกสปรินต์
+              </div>
+            </div>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-lime);">
+            READY FOR PRODUCTION DEPLOYMENT
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 10: EXECUTIVE DECISION & NEXT STEPS
+           ========================================== -->
+      <section class="slide" data-hall="HALL 10" data-title="Executive Call to Action">
+        <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; height: 100%; align-items: center;">
+          <div>
+            <div class="specimen-label" style="margin-bottom: 12px;">
+              <span class="badge-dot"></span>
+              CONCLUSION // EXECUTIVE APPROVAL
+            </div>
+
+            <h1 style="font-size: clamp(2rem, 3.8vw, 3.2rem); margin-bottom: 16px;">
+              ก้าวต่อไป: สร้างปรากฏการณ์แห่ง <span style="color: var(--gr-lime);">New Knowledge</span>
+            </h1>
+
+            <p style="font-size: 17px; color: var(--text-muted); line-height: 1.8; margin-bottom: 28px;">
+              GRURU MUSEUM ไม่ใช่แค่เว็บไซต์ แต่คือระบบนิเวศแห่งความรู้ใหม่ที่ผสาน <strong>Modern Art + Data Science + Lifestyle</strong> สู่ผลิตภัณฑ์ดิจิทัลที่สร้าง Impact สูงสุดให้กับผู้คนในยุคข้อมูลล้นเกิน
+            </p>
+
+            <div class="hud-card" style="padding: 20px; border-left: 4px solid var(--gr-lime); margin-bottom: 28px;">
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime); margin-bottom: 6px;">
+                EXECUTIVE DECISION GATES
+              </div>
+              <ul style="font-size: 14.5px; color: var(--gr-paper); display: flex; flex-direction: column; gap: 8px; list-style: none;">
+                <li style="display: flex; align-items: center; gap: 10px;">
+                  <i data-lucide="check-square" style="color: var(--gr-lime); width: 18px; height: 18px;"></i>
+                  <span><strong>1. อนุมัติ Brand Identity & Design Tokens:</strong> ยืนยัน Palette & Typography</span>
+                </li>
+                <li style="display: flex; align-items: center; gap: 10px;">
+                  <i data-lucide="check-square" style="color: var(--gr-lime); width: 18px; height: 18px;"></i>
+                  <span><strong>2. ไฟเขียว Sprint 1 & 2:</strong> สร้างคอมโพเนนต์และ Prototype กราฟความรู้</span>
+                </li>
+                <li style="display: flex; align-items: center; gap: 10px;">
+                  <i data-lucide="check-square" style="color: var(--gr-lime); width: 18px; height: 18px;"></i>
+                  <span><strong>3. อนุมัติชุดข้อมูลนำร่อง:</strong> 3 นิทรรศการชุดแรก (Science, Culture, Everyday Lab)</span>
+                </li>
+              </ul>
+            </div>
+
+            <div style="display: flex; gap: 16px; align-items: center;">
+              <button class="btn-lime" onclick="celebrateLaunch()">
+                <i data-lucide="award" style="width: 18px; height: 18px;"></i>
+                <span>อนุมัติโครงการ (APPROVE)</span>
+              </button>
+              <button class="btn-ghost" onclick="goToSlide(0)">
+                <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+                <span>วนกลับไปหน้าแรก</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Master Knowledge Map Graphic -->
+          <div class="hud-card" style="padding: 12px; background: rgba(23, 23, 31, 0.7); overflow: hidden;">
+            <div class="scanlines" style="border-radius: 4px; overflow: hidden; position: relative;">
+              <img src="assets/knowledge_graph_6.png" alt="Unified Map of Human Knowledge" style="width: 100%; height: 420px; object-fit: cover; display: block; border-radius: 4px;">
+              <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; background: rgba(11,11,15,0.9); backdrop-filter: blur(8px); padding: 12px 16px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 10px; color: var(--gr-lime);">A UNIFIED MAP OF HUMAN KNOWLEDGE</div>
+                  <div style="font-size: 13px; font-weight: 600;">Future Archaeology Master Archive</div>
+                </div>
+                <span class="badge" style="background: var(--gr-lime); color: #000; font-weight: 700;">GRURU 2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Controls -->
+    <footer id="bottom-bar">
+      <!-- Slide Navigator / Key hints -->
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <button class="btn-ghost" onclick="prevSlide()" title="สไลด์ก่อนหน้า (Arrow Left)">
+          <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+          <span>PREV</span>
+        </button>
+        <button class="btn-ghost" onclick="nextSlide()" title="สไลด์ถัดไป (Arrow Right / Space)">
+          <span>NEXT</span>
+          <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+        </button>
+        <span style="font-size: 11px; font-family: var(--font-mono); color: var(--gr-fog); display: none; @media(min-width: 900px){display:inline;}">
+          [← / →] เลื่อนสไลด์ &nbsp;|&nbsp; [N] โน้ตผู้นำเสนอ &nbsp;|&nbsp; [O] ภาพรวม &nbsp;|&nbsp; [F] เต็มจอ
+        </span>
+      </div>
+
+      <!-- Current Slide Title Badge -->
+      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-paper); background: rgba(44, 44, 58, 0.4); padding: 4px 12px; border-radius: 3px; border: 1px solid var(--border-color);">
+        <span id="bottom-hall-tag" style="color: var(--gr-lime);">HALL 01</span> // <span id="bottom-title-tag">Executive Vision</span>
+      </div>
+
+      <!-- Quick Theme Toggle -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-ghost" onclick="toggleTheme()" title="สลับโหมด Dark Void / Light Archive (T)">
+          <i data-lucide="sun-moon" style="width: 15px; height: 15px;"></i>
+          <span id="theme-label" style="font-size: 11px;">DARK VOID</span>
+        </button>
+      </div>
+    </footer>
+
+    <!-- Speaker Notes Drawer -->
+    <aside id="notes-drawer">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <div style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-lime); display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="mic" style="width: 14px; height: 14px;"></i>
+          PRESENTER NOTES (บทพูดผู้บริหาร)
+        </div>
+        <button onclick="toggleNotes()" style="background: none; border: none; color: var(--gr-fog); cursor: pointer;">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+        </button>
+      </div>
+      <div id="notes-content" style="font-size: 14px; color: var(--gr-paper); line-height: 1.7; max-height: 300px; overflow-y: auto;">
+        <!-- Filled dynamically -->
+      </div>
+    </aside>
+
+    <!-- Slide Overview Modal -->
+    <div id="overview-modal">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+          <h2 style="font-size: 24px;">GRURU MUSEUM — Exhibition Halls Overview</h2>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--gr-fog);">คลิกสไลด์ที่ต้องการเพื่อข้ามไปยังห้องจัดแสดงนั้น</div>
+        </div>
+        <button class="btn-ghost" onclick="toggleOverview()">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          <span>ปิด (ESC)</span>
+        </button>
+      </div>
+      <div class="overview-grid" id="overview-grid-container">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+    <!-- Image Archive Gallery Modal -->
+    <div id="archive-modal" style="position: fixed; inset: 0; background: rgba(11, 11, 15, 0.96); backdrop-filter: blur(20px); z-index: 350; display: flex; flex-direction: column; padding: 36px 48px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+          <div class="specimen-label" style="margin-bottom: 6px;">
+            <span class="badge-dot"></span>
+            VISUAL ASSETS ARCHIVE // GRURU MUSEUM
+          </div>
+          <h2 style="font-size: 26px;">คลังภาพและสื่อประกอบ Knowledge Graph ทั้งหมด</h2>
+        </div>
+        <button class="btn-ghost" onclick="toggleArchive()">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          <span>ปิดคลังภาพ (ESC)</span>
+        </button>
+      </div>
+
+      <!-- Archive Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; overflow-y: auto; padding-right: 8px; flex: 1;">
+        
+        <!-- Asset 1: Logo -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/gruru_logo.jpg', 'GRURU MUSEUM Brand Identity Logo', 'โลโก้อัตลักษณ์แบรนด์ผสานเข็มทิศดาราศาสตร์โบราณ (Astrolabe), โครงข่ายเส้นกราฟความรู้ และตัวอักษร G ทรงเรขาคณิต บนโทนสี Void Black และแสงเรือง Specimen Lime + Ember Orange')">
+          <img src="assets/gruru_logo.jpg" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime);">ASSET 01 // BRAND</span>
+            <span class="badge" style="background: rgba(215,255,58,0.15); color: var(--gr-lime);">AI CREATED</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">GRURU MUSEUM Logo Mark</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">สัญลักษณ์ Future Archaeology & Knowledge Network</p>
+        </div>
+
+        <!-- Asset 2: Exhibition Hall -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/gruru_museum_hall.jpg', 'Digital Exhibition Hall 01', 'บรรยากาศแกลเลอรี Modern Art ผสมผสานห้องทดลอง Sci-Fi แสดงทรงกลม Knowledge Graph สามมิติลอยกลางอากาศ สะท้อนพื้นเงานิ่งเรียบ')">
+          <img src="assets/gruru_museum_hall.jpg" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-cyan);">ASSET 02 // INTERIOR</span>
+            <span class="badge" style="background: rgba(46,230,255,0.15); color: var(--gr-cyan);">AI CREATED</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Exhibition Hall Atmosphere</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">ห้องแล็บนักโบราณคดีจากอนาคต (Future Archaeology)</p>
+        </div>
+
+        <!-- Asset 3: Everyday Living -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/gruru_everyday_living.jpg', 'Built for Everyday Living Experience', 'ภาพการนำความรู้ประวัติศาสตร์และโบราณคดีมาแสดงเป็นการ์ดโปร่งแสงในบ้านสมัยใหม่ เพื่อการดูแลสุขภาพและเพิ่มคุณภาพชีวิต')">
+          <img src="assets/gruru_everyday_living.jpg" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: #34E89E;">ASSET 03 // LIFESTYLE</span>
+            <span class="badge" style="background: rgba(52,232,158,0.15); color: #34E89E;">AI CREATED</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Built for Everyday Living</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">ความรู้ที่ใช้ได้จริงในบ้านและชีวิตประจำวัน</p>
+        </div>
+
+        <!-- Asset 4: Knowledge Graph 1 -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/knowledge_graph_1.png', 'Integrated Knowledge from Multiple Sources', 'แผนภาพสังเคราะห์ความรู้จาก 4 แหล่ง: Books, Textbooks, Databases, Community สู่ Connected Concepts และ Real-World Applications')">
+          <img src="assets/knowledge_graph_1.png" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-ember);">ASSET 04 // GRAPH</span>
+            <span class="badge" style="background: rgba(255,90,31,0.15); color: var(--gr-ember);">WORKSPACE FILE</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Multi-Source Integration</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">โครงข่ายความรู้สังเคราะห์เพื่อการค้นหาเชิงลึก</p>
+        </div>
+
+        <!-- Asset 5: Knowledge Graph 2 -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/knowledge_graph_2.png', 'Isometric 3D Knowledge Platform', 'แท่นห้องทดลองความรู้เรืองแสง แสดงขั้นตอน Discover, Understand, Learn, Reason และ Apply')">
+          <img src="assets/knowledge_graph_2.png" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-violet);">ASSET 05 // 3D LAB</span>
+            <span class="badge" style="background: rgba(140,107,255,0.15); color: var(--gr-violet);">WORKSPACE FILE</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Isometric Knowledge Pedestal</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">แท่นจำลองข้อมูล 3 มิติพร้อม 5 เสาหลักการเรียนรู้</p>
+        </div>
+
+        <!-- Asset 6: Knowledge Graph 3 -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/knowledge_graph_3.png', 'Holographic Knowledge Sphere with HUD', 'ระบบประมวลผลความรู้ความหมาย (Semantic Links & Synthesis) แสดงการเชื่อมโยงข้ามศาสตร์ในห้องแล็บแห่งอนาคต')">
+          <img src="assets/knowledge_graph_3.png" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-cyan);">ASSET 06 // HUD SPHERE</span>
+            <span class="badge" style="background: rgba(46,230,255,0.15); color: var(--gr-cyan);">WORKSPACE FILE</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Holographic Semantic Sphere</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">โมเดลความสัมพันธ์แบบเชื่อมโยงข้ามโดเมน</p>
+        </div>
+
+        <!-- Asset 7: Knowledge Graph 4 -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/knowledge_graph_4.png', 'Minimalist Editorial Knowledge Graph', 'สไตล์ Modern Art Gallery เรียบหรู โทนสีกระดาษจดหมายเหตุ Archive Paper สบายตา')">
+          <img src="assets/knowledge_graph_4.png" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">ASSET 07 // EDITORIAL</span>
+            <span class="badge" style="background: rgba(242,237,227,0.15); color: var(--gr-paper);">WORKSPACE FILE</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Minimalist Archive Graph</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">ดีไซน์สไตล์สิ่งพิมพ์ศิลปะร่วมสมัย</p>
+        </div>
+
+        <!-- Asset 8: Knowledge Graph 5 -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/knowledge_graph_5.png', 'Illustrated Data Booming Schema', 'ต้นแบบ Data Booming: หัวข้อ Plant ระเบิดออกเป็น Photosynthesis, Environment, Glucose, Cells เข้าใจโครงสร้างได้ใน 3 วินาที')">
+          <img src="assets/knowledge_graph_5.png" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: #34E89E;">ASSET 08 // BOOMING</span>
+            <span class="badge" style="background: rgba(52,232,158,0.15); color: #34E89E;">WORKSPACE FILE</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Illustrated Booming Model</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">แผนภาพระเบิดกิ่งก้านความรู้ต้นแบบ</p>
+        </div>
+
+        <!-- Asset 9: Knowledge Graph 6 -->
+        <div class="hud-card" style="padding: 12px; cursor: pointer;" onclick="openLightbox('assets/knowledge_graph_6.png', 'A Unified Map of Human Knowledge', 'มหากาพย์ภาพวาดแสดงเส้นทางภูมิปัญญามนุษย์ตั้งแต่อารยธรรมโบราณผ่านการแปลงข้อมูลสู่เมืองแห่งอนาคต')">
+          <img src="assets/knowledge_graph_6.png" style="width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime);">ASSET 09 // MASTER MAP</span>
+            <span class="badge" style="background: var(--gr-lime); color: #000; font-weight: 700;">WORKSPACE FILE</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 4px;">Unified Map of Human Knowledge</h4>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">ผืนผ้าใบมาสเตอร์พีซ Future Archaeology</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox-modal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 400; display: none; align-items: center; justify-content: center; padding: 40px;" onclick="closeLightbox()">
+      <div style="max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center; position: relative;" onclick="event.stopPropagation()">
+        <img id="lightbox-img" src="" style="max-width: 100%; max-height: 72vh; border-radius: 6px; border: 2px solid var(--gr-lime); box-shadow: 0 0 32px rgba(215,255,58,0.3); object-fit: contain;">
+        <div style="margin-top: 16px; text-align: center; max-width: 700px;">
+          <h3 id="lightbox-title" style="color: var(--gr-lime); margin-bottom: 6px; font-size: 20px;"></h3>
+          <p id="lightbox-desc" style="font-size: 14px; color: var(--text-main); line-height: 1.5;"></p>
+        </div>
+        <button class="btn-ghost" onclick="closeLightbox()" style="position: absolute; top: -36px; right: 0;">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          <span>ปิด (ESC)</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ============================================================
+       SLIDE SYSTEM & PRESENTER NOTES
+       ============================================================ */
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+    let audioEnabled = true;
+
+    // Executive Speaker Notes for each slide
+    const speakerNotes = [
+      "สไลด์ที่ 1 (Executive Vision): สวัสดีท่านผู้บริหารทุกท่าน วันนี้เราขอเสนอโปรเจกต์ GRURU MUSEUM แพลตฟอร์มพิพิธภัณฑ์ความรู้ดิจิทัลในคอนเซปต์ 'Future Archaeology' ที่มองว่าความรู้ในอดีตคือข้อมูลที่มีค่า แต่ต้องการการถอดรหัสและเล่าใหม่ให้คนรุ่นใหม่เข้าถึงได้จริง จุดเด่นคือการใช้เทคโนโลยี Knowledge Graph และ Data Booming ที่เปลี่ยนเรื่องยากให้เข้าใจได้ในไม่กี่นาที",
+      "สไลด์ที่ 2 (Market Gap & Positioning): ในตลาดปัจจุบัน ผู้ใช้ติดอยู่ระหว่าง 'คลิปสั้น' ที่ดูสนุกแต่ตื้นและไม่มีแหล่งอ้างอิง กับ 'ตำราวิชาการ' ที่ลึกแต่น่าเบื่อเหมือนนั่งเรียน GRURU จึงวางตำแหน่งในพื้นที่ Blue Ocean คือ 'สนุกเหมือนดูงานศิลปะ แต่มีหลักฐานอ้างอิง และเชื่อมโยงเป็นโครงข่ายโต้ตอบได้'",
+      "สไลด์ที่ 3 (Target Personas): กลุ่มเป้าหมายหลักคือคนวัย 22–40 ปี แบ่งเป็น 3 บุคลิก: 1) Curious Starter ที่ชอบเสพเรื่อง 3-5 นาทีและแชร์การ์ดลงโซเชียล, 2) Creative Professional ที่ต้องการโครงข่ายความรู้ข้ามสายงานเพื่อต่อยอดไอเดีย, และ 3) Lifelong Learner ที่ต้องการความถูกต้องและสิ่งที่นำไปปรับใช้ในชีวิตจริง",
+      "สไลด์ที่ 4 (5-Stage Pipeline): ขั้นตอนการทำงานของระบบเรายึดหลัก 5 ขั้น: Excavate (ขุดค้น) -> Decode (ถอดรหัสเป็น Graph) -> Retell (เล่าด้วยภาพแบบ Modern Art) -> Connect (เปิดให้สำรวจความเชื่อมโยง) -> Apply (สรุป Everyday Takeaway) เพื่อให้ทุกการเยี่ยมชมได้ความรู้กลับไปใช้จริงเสมอ",
+      "สไลด์ที่ 5 (Data Booming Live Demo): นี่คือ Signature Feature ตัวแรกของเรา 'Data Booming' สังเกตว่าเมื่อเราคลิกที่โหนดเมล็ดพันธุ์ ความรู้จะระเบิดออกสู่วงรอบรัศมีทีละชั้นภายในเวลาเพียง 40ms ทำให้สมองของผู้ใช้เข้าใจความสัมพันธ์ได้ภายใน 3 วินาทีแรก เป็นกลไกที่กระตุ้นความอยากรู้อยากเห็นได้สูงมาก",
+      "สไลด์ที่ 6 (Interactive Knowledge Graph): Signature Feature ตัวที่สองคือแผนที่ความรู้ฉบับเต็ม Force-Directed Graph ครอบคลุม 6 หมวดความรู้ โดยออกแบบตามหลัก WCAG AA แยกด้วยทั้งสีและรูปทรงเรขาคณิต ผู้ใช้สามารถซูม ค้นหา กรองหมวดหมู่ และคลิกเพื่อดูบัตรข้อมูล Specimen Label ได้อย่างลื่นไหล",
+      "สไลด์ที่ 7 (Built for Everyday Living): หัวใจสำคัญที่สุดคือความรู้ต้องไม่จบแค่บนจอ แต่ต้องนำมาปรับใช้ในชีวิตประจำวัน เช่น การนำความรู้การหมักดองโบราณมาปรับสมดุลลำไส้ในยุคปัจจุบัน หรือการนำสวนลอยฟ้ามาจัดโต๊ะทำงานลด Burnout พร้อมระบบ Export การ์ด 1080x1350 สำหรับแชร์ลงโซเชียลมีเดีย",
+      "สไลด์ที่ 8 (Design Tokens & Brand Identity): อัตลักษณ์ของแบรนด์ผสานสองขั้ว 'Past Warm × Future Electric' สัดส่วนสี 70-20-10 ตาม brief ตัวอักษรใช้ 3 ฟอนต์คุณภาพ Chakra Petch, IBM Plex Sans Thai และ IBM Plex Mono พร้อมบัตร Specimen Label ที่สร้างเอกลักษณ์เฉพาะตัวจำได้ทันที",
+      "สไลด์ที่ 9 (Roadmap & Google Antigravity): แผนงานแบ่งเป็น 4 เฟส ชัดเจน ออกแบบบนสถาปัตยกรรม Next.js + Tailwind CSS + D3.js โดยผสานเวิร์กโฟลว์ของ Google Antigravity ในการกำกับดูแลโค้ดอย่างเป็นระบบผ่านไฟล์กฎของ Workspace",
+      "สไลด์ที่ 10 (Executive Approval): สรุปผลลัพธ์และสิ่งที่ต้องการอนุมัติจากผู้บริหารในวันนี้ เพื่อขับเคลื่อน GRURU MUSEUM สู่การเป็นผู้นำด้าน Digital Knowledge Museum รุ่นใหม่ ขอเชิญทุกท่านร่วมกันกด Approve เพื่อเริ่มพัฒนาจริงครับ"
+    ];
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+
+      // Update counters & progress
+      const numStr = (currentSlide + 1).toString().padStart(2, '0');
+      document.getElementById('current-slide-num').textContent = numStr;
+      
+      const currentEl = slides[currentSlide];
+      const hall = currentEl.getAttribute('data-hall') || `HALL ${numStr}`;
+      const title = currentEl.getAttribute('data-title') || 'Exhibition';
+      
+      document.getElementById('bottom-hall-tag').textContent = hall;
+      document.getElementById('bottom-title-tag').textContent = title;
+
+      const progressPercent = ((currentSlide + 1) / totalSlides) * 100;
+      document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+
+      // Update speaker notes
+      document.getElementById('notes-content').innerHTML = `
+        <div style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime); margin-bottom: 6px;">
+          ${hall} // ${title}
+        </div>
+        <p>${speakerNotes[currentSlide]}</p>
+      `;
+
+      playBeep(600, 0.05);
+
+      // Trigger specific canvas setups when slide becomes active
+      if (currentSlide === 4) {
+        initBooming();
+      } else if (currentSlide === 5) {
+        initForceGraph();
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function goToSlide(index) {
+      if (index >= 0 && index < totalSlides) {
+        currentSlide = index;
+        updateSlide();
+        closeOverview();
+      }
+    }
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === 'n' || e.key === 'N') {
+        toggleNotes();
+      } else if (e.key === 'o' || e.key === 'O') {
+        toggleOverview();
+      } else if (e.key === 't' || e.key === 'T') {
+        toggleTheme();
+      } else if (e.key === 'Escape') {
+        closeOverview();
+        closeNotes();
+        closeArchive();
+        closeLightbox();
+      }
+    });
+
+    // Fullscreen toggle
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // Notes toggle
+    function toggleNotes() {
+      const drawer = document.getElementById('notes-drawer');
+      drawer.classList.toggle('open');
+      playBeep(800, 0.05);
+    }
+    function closeNotes() {
+      document.getElementById('notes-drawer').classList.remove('open');
+    }
+
+    // Overview modal
+    function toggleOverview() {
+      const modal = document.getElementById('overview-modal');
+      const isOpen = modal.classList.toggle('open');
+      if (isOpen) {
+        buildOverviewGrid();
+      }
+      playBeep(700, 0.05);
+    }
+    function closeOverview() {
+      document.getElementById('overview-modal').classList.remove('open');
+    }
+
+    // Archive Gallery Modal
+    function toggleArchive() {
+      const modal = document.getElementById('archive-modal');
+      modal.classList.toggle('open');
+      if (modal.classList.contains('open')) {
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
+        lucide.createIcons();
+        playBeep(850, 0.06);
+      } else {
+        closeArchive();
+      }
+    }
+    function closeArchive() {
+      const modal = document.getElementById('archive-modal');
+      modal.style.opacity = '0';
+      modal.style.pointerEvents = 'none';
+      modal.classList.remove('open');
+    }
+
+    // Lightbox Modal
+    function openLightbox(src, title, desc) {
+      const modal = document.getElementById('lightbox-modal');
+      const img = document.getElementById('lightbox-img');
+      const t = document.getElementById('lightbox-title');
+      const d = document.getElementById('lightbox-desc');
+
+      img.src = src;
+      t.textContent = title;
+      d.textContent = desc;
+      modal.style.display = 'flex';
+      playBeep(1000, 0.08);
+    }
+    function closeLightbox() {
+      const modal = document.getElementById('lightbox-modal');
+      modal.style.display = 'none';
+    }
+
+    function buildOverviewGrid() {
+      const container = document.getElementById('overview-grid-container');
+      container.innerHTML = '';
+      slides.forEach((s, idx) => {
+        const hall = s.getAttribute('data-hall') || `HALL 0${idx+1}`;
+        const title = s.getAttribute('data-title') || 'Slide';
+        const card = document.createElement('div');
+        card.className = `overview-card ${idx === currentSlide ? 'current' : ''}`;
+        card.onclick = () => goToSlide(idx);
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-lime);">${hall}</span>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--gr-fog);">#${idx+1}</span>
+          </div>
+          <h4 style="font-size: 15px; margin-bottom: 6px;">${title}</h4>
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">${speakerNotes[idx].substring(0, 75)}...</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      if (isDark) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        document.getElementById('theme-label').textContent = 'LIGHT ARCHIVE';
+      } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        document.getElementById('theme-label').textContent = 'DARK VOID';
+      }
+      playBeep(900, 0.06);
+    }
+
+    // Audio SFX Generator (Web Audio API - No external files needed)
+    let audioCtx = null;
+    function playBeep(freq = 600, duration = 0.05) {
+      if (!audioEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (err) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('btn-audio');
+      btn.style.opacity = audioEnabled ? '1' : '0.5';
+      if (audioEnabled) playBeep(880, 0.08);
+    }
+
+    // Celebration confetti for executive approval
+    function celebrateLaunch() {
+      playBeep(1200, 0.2);
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#D7FF3A', '#FF5A1F', '#2EE6FF', '#8C6BFF']
+      });
+    }
+
+    /* ============================================================
+       DATA BOOMING INTERACTIVE SIMULATOR (SLIDE 05)
+       ============================================================ */
+    const boomingTree = {
+      id: "root",
+      title: "พืชและการสังเคราะห์แสง",
+      code: "GRM-BIO-001",
+      era: "EVOLUTIONARY BIOLOGY // 3.8B YEARS",
+      category: "Nature & Biology",
+      color: "#34E89E",
+      desc: "กระบวนการแปลงพลังงานแสงอาทิตย์เป็นพลังงานเคมี ซึ่งเป็นรากฐานของห่วงโซ่อาหารและระบบนิเวศทั้งมวลบนโลกมนุษย์",
+      takeaway: "การวางต้นไม้ในห้องทำงานช่วยดูดซับ CO₂ และกระตุ้นสมาธิการทำงานได้สูงขึ้นถึง 15%",
+      children: [
+        {
+          id: "c1",
+          title: "แสงแดด (Sunlight)",
+          code: "GRM-SCI-010",
+          era: "SOLAR ENERGY",
+          color: "#FFC233",
+          desc: "โฟตอนจากดวงอาทิตย์กระตุ้นอิเล็กตรอนในคลอโรฟิลล์ เริ่มต้นปฏิกิริยาแสง",
+          takeaway: "รับแสงแดดยามเช้า 15 นาที เพื่อ Reset นาฬิกาชีวิต (Circadian Rhythm) และเพิ่ม Serotonin",
+          children: [
+            { id: "c1_1", title: "ช่วงคลื่นสีแดง/น้ำเงิน", color: "#2EE6FF", desc: "พืชดูดกลืนแสงสีแดงและน้ำเงินได้ดีที่สุด", takeaway: "ใช้ไฟส่องโต๊ะโทน Warm/Cool ให้เหมาะกับช่วงเวลาทำงาน" },
+            { id: "c1_2", title: "Photoreceptors", color: "#8C6BFF", desc: "ตัวรับแสงในเซลล์ที่ควบคุมการเจริญเติบโต", takeaway: "ดวงตามนุษย์ต้องการแสงธรรมชาติเพื่อชะลอสายตาสั้น" }
+          ]
+        },
+        {
+          id: "c2",
+          title: "คลอโรพลาสต์ (Chloroplast)",
+          code: "GRM-BIO-012",
+          era: "CELLULAR BIOLOGY",
+          color: "#34E89E",
+          desc: "ออร์แกเนลล์ที่บรรจุรงควัตถุสีเขียว ทำหน้าที่เป็นโรงงานแปรรูปพลังงานระดับเซลล์",
+          takeaway: "ผักใบเขียวเข้มมีคลอโรฟิลล์และสารต้านอนุมูลอิสระสูง ช่วยชะลอวัย",
+          children: [
+            { id: "c2_1", title: "ไทลาคอยด์ (Thylakoid)", color: "#34E89E", desc: "เยื่อหุ้มซ้อนชั้นคล้ายเหรียญ เกิดปฏิกิริยาแสง", takeaway: "โครงสร้างแบบซ้อนชั้นถูกนำมาเลียนแบบในแบตเตอรี่ Solar Cell" },
+            { id: "c2_2", title: "สโตรมา (Stroma)", color: "#2EE6FF", desc: "ของเหลวที่เกิดวัฏจักรคัลวินสร้างน้ำตาล", takeaway: "วัฏจักรแบบปิดคือต้นแบบของ Circular Economy" }
+          ]
+        },
+        {
+          id: "c3",
+          title: "ก๊าซออกซิเจน (O₂)",
+          code: "GRM-CHEM-015",
+          era: "GREAT OXIDATION EVENT",
+          color: "#2EE6FF",
+          desc: "ผลพลอยได้จากการแตกตัวของน้ำที่เปลี่ยนบรรยากาศโลกและให้กำเนิดสิ่งมีชีวิตชั้นสูง",
+          takeaway: "ฝึกหายใจลึกแบบ 4-7-8 วันละ 5 นาที เพื่อเพิ่มปริมาณออกซิเจนในสมอง",
+          children: [
+            { id: "c3_1", title: "การแตกตัวของน้ำ (H₂O)", color: "#2EE6FF", desc: "โมเลกุลน้ำถูกแยกออกเป็นไฮโดรเจนและออกซิเจน", takeaway: "พลังงานไฮโดรเจนคืออนาคตของพลังงานสะอาดระดับโลก" }
+          ]
+        },
+        {
+          id: "c4",
+          title: "น้ำตาลกลูโคส (C₆H₁₂O₆)",
+          code: "GRM-BIO-019",
+          era: "BIOCHEMICAL ENERGY",
+          color: "#FF5FA2",
+          desc: "สารอาหารหลักที่ถูกเก็บสะสมเป็นแป้งและพลังงานหล่อเลี้ยงโลก",
+          takeaway: "เลือกคาร์โบไฮเดรตเชิงซ้อน (Complex Carbs) เพื่อรักษาระดับน้ำตาลในเลือดให้คงที่",
+          children: [
+            { id: "c4_1", title: "แป้งและเซลลูโลส", color: "#FFC233", desc: "เส้นใยที่เป็นโครงสร้างของผนังเซลล์พืช", takeaway: "ไฟเบอร์สูงช่วยหล่อเลี้ยงจุลินทรีย์ชนิดดีในลำไส้" }
+          ]
+        },
+        {
+          id: "c5",
+          title: "สิ่งแวดล้อม & สภาพภูมิอากาศ",
+          code: "GRM-ECO-022",
+          era: "EARTH CLIMATE SYSTEM",
+          color: "#8C6BFF",
+          desc: "ความสมดุลของคาร์บอนไดออกไซด์ ความชื้น และดินที่พืชช่วยควบคุมเสถียรภาพ",
+          takeaway: "พื้นที่สีเขียวในเมืองช่วยลดอุณหภูมิเกาะความร้อน (Urban Heat Island) ได้ 2-4°C",
+          children: [
+            { id: "c5_1", title: "วัฏจักรคาร์บอน (Carbon Sink)", color: "#8C6BFF", desc: "การกักเก็บคาร์บอนในเนื้อไม้และดิน", takeaway: "ปลูกไม้ยืนต้นคือการลงทุนที่ยั่งยืนที่สุดเพื่อลดโลกร้อน" }
+          ]
+        },
+        {
+          id: "c6",
+          title: "โครงสร้าง & ราก (Roots & Stem)",
+          code: "GRM-ARCH-030",
+          era: "BIOMIMICRY & STRUCTURE",
+          color: "#FF5A1F",
+          desc: "ระบบท่อลำเลียงไซเลมและโฟลเอ็มที่ดูดซับแร่ธาตุและค้ำจุนลำต้น",
+          takeaway: "โครงสร้างท่อลำเลียงเป็นแรงบันดาลใจให้วิศวกรรมการระบายความร้อนในตึกระฟ้า",
+          children: [
+            { id: "c6_1", title: "ระบบท่อแคปิลลารี", color: "#FF5A1F", desc: "แรงดึงดูดของน้ำที่ต้านแรงโน้มถ่วงขึ้นสู่ยอดไม้", takeaway: "ระบบประปาและท่อส่งสมัยใหม่เลียนแบบการดูดซับของรากไม้" }
+          ]
+        }
+      ]
+    };
+
+    let boomingSvg, boomingWidth, boomingHeight;
+    let boomingActiveNodes = [];
+    let boomingCurrentTier = 0;
+
+    function initBooming() {
+      const container = document.getElementById('booming-container');
+      boomingWidth = container.clientWidth;
+      boomingHeight = container.clientHeight;
+      boomingSvg = d3.select('#booming-svg');
+      boomingSvg.selectAll('*').remove();
+
+      boomingActiveNodes = [{
+        ...boomingTree,
+        x: boomingWidth / 2,
+        y: boomingHeight / 2,
+        tier: 0,
+        radius: 36,
+        isExpanded: false
+      }];
+      boomingCurrentTier = 1;
+
+      renderBooming();
+    }
+
+    function resetBooming() {
+      initBooming();
+      updateBoomingInfo(boomingTree);
+      playBeep(450, 0.08);
+    }
+
+    function renderBooming() {
+      boomingSvg.selectAll('*').remove();
+
+      // Draw Time rings radar sweep background
+      const gBg = boomingSvg.append('g').attr('class', 'bg-rings');
+      [80, 150, 220, 290].forEach(r => {
+        gBg.append('circle')
+          .attr('cx', boomingWidth / 2)
+          .attr('cy', boomingHeight / 2)
+          .attr('r', r)
+          .attr('fill', 'none')
+          .attr('stroke', 'rgba(44, 44, 58, 0.45)')
+          .attr('stroke-width', 1)
+          .attr('stroke-dasharray', '4,4');
+      });
+
+      // Links group
+      const gLinks = boomingSvg.append('g').attr('class', 'links');
+      // Nodes group
+      const gNodes = boomingSvg.append('g').attr('class', 'nodes');
+
+      // Draw links
+      boomingActiveNodes.forEach(node => {
+        if (node.parent) {
+          gLinks.append('line')
+            .attr('x1', node.parent.x)
+            .attr('y1', node.parent.y)
+            .attr('x2', node.x)
+            .attr('y2', node.y)
+            .attr('stroke', 'rgba(46, 230, 255, 0.45)')
+            .attr('stroke-width', 1.5)
+            .attr('stroke-dasharray', node.tier === 2 ? '3,3' : 'none');
+        }
+      });
+
+      // Draw nodes
+      const nodeGroups = gNodes.selectAll('.b-node')
+        .data(boomingActiveNodes)
+        .enter()
+        .append('g')
+        .attr('class', 'b-node')
+        .attr('transform', d => `translate(${d.x}, ${d.y})`)
+        .style('cursor', 'pointer')
+        .on('click', (event, d) => handleNodeBoom(d));
+
+      // Node circles with glow
+      nodeGroups.append('circle')
+        .attr('r', d => d.radius)
+        .attr('fill', d => d.color || '#D7FF3A')
+        .attr('fill-opacity', d => d.tier === 0 ? 0.9 : 0.75)
+        .attr('stroke', '#FFF')
+        .attr('stroke-width', d => d.isExpanded ? 3 : 1.5)
+        .attr('filter', d => d.tier === 0 ? 'drop-shadow(0 0 16px rgba(215, 255, 58, 0.8))' : 'none');
+
+      // Pulsing outer ring on central seed
+      nodeGroups.filter(d => d.tier === 0).append('circle')
+        .attr('r', 44)
+        .attr('fill', 'none')
+        .attr('stroke', '#D7FF3A')
+        .attr('stroke-width', 1.5)
+        .attr('stroke-dasharray', '2,4')
+        .attr('opacity', 0.8);
+
+      // Node labels
+      nodeGroups.append('text')
+        .text(d => d.title.split(' ')[0])
+        .attr('text-anchor', 'middle')
+        .attr('dy', d => d.radius + 16)
+        .attr('fill', '#F2EDE3')
+        .attr('font-size', d => d.tier === 0 ? '13px' : '11px')
+        .attr('font-family', 'var(--font-body)')
+        .attr('font-weight', '600');
+
+      // Update counters
+      document.getElementById('booming-count-text').textContent = boomingActiveNodes.length;
+      document.getElementById('booming-layer-text').textContent = `LEVEL ${boomingCurrentTier} (${boomingActiveNodes.length} NODES)`;
+    }
+
+    function handleNodeBoom(targetNode) {
+      if (!targetNode.children || targetNode.children.length === 0 || targetNode.isExpanded) {
+        updateBoomingInfo(targetNode);
+        playBeep(900, 0.04);
+        return;
+      }
+
+      targetNode.isExpanded = true;
+      playBeep(1100, 0.12);
+
+      const children = targetNode.children;
+      const childCount = children.length;
+      const radiusDist = targetNode.tier === 0 ? 140 : 80;
+
+      children.forEach((child, idx) => {
+        const baseAngle = targetNode.tier === 0 ? (idx * (2 * Math.PI / childCount)) : (idx * 0.8 - 0.4 + Math.atan2(targetNode.y - boomingHeight/2, targetNode.x - boomingWidth/2));
+        const childX = targetNode.x + radiusDist * Math.cos(baseAngle);
+        const childY = targetNode.y + radiusDist * Math.sin(baseAngle);
+
+        boomingActiveNodes.push({
+          ...child,
+          x: childX,
+          y: childY,
+          radius: targetNode.tier === 0 ? 20 : 13,
+          tier: targetNode.tier + 1,
+          parent: targetNode,
+          isExpanded: false
+        });
+      });
+
+      boomingCurrentTier = Math.max(boomingCurrentTier, targetNode.tier + 2);
+      renderBooming();
+      updateBoomingInfo(targetNode);
+    }
+
+    function updateBoomingInfo(data) {
+      document.getElementById('detail-code').textContent = data.code || 'GRM-BIO-EXP';
+      document.getElementById('detail-title').textContent = data.title;
+      document.getElementById('detail-era').textContent = data.era || 'VERIFIED KNOWLEDGE ENTITY';
+      document.getElementById('detail-desc').textContent = data.desc;
+      document.getElementById('detail-takeaway').textContent = data.takeaway;
+    }
+
+    /* ============================================================
+       FULL FORCE-DIRECTED KNOWLEDGE GRAPH (SLIDE 06)
+       ============================================================ */
+    const graphData = {
+      nodes: [
+        { id: "sci1", name: "Neural Plasticity", cat: "science", code: "GRM-SCI-001", era: "1970s", desc: "การปรับเปลี่ยนและสร้างโครงข่ายประสาทใหม่ในสมองมนุษย์ตลอดชีวิต", takeaway: "เรียนรู้สิ่งใหม่ 15 นาทีต่อวัน ชะลอภาวะสมองเสื่อม", sources: "Nature Neuro (2018)" },
+        { id: "sci2", name: "Photosynthesis", cat: "science", code: "GRM-SCI-002", era: "Ancient", desc: "การสังเคราะห์แสงแปลงพลังงานโฟตอนสู่พันธะเคมี", takeaway: "รับแสงแดดยามเช้าเพื่อตั้งเวลาชีวิตและกระตุ้นการเผาผลาญ", sources: "Cell Biol (2021)" },
+        { id: "sci3", name: "Quantum Computing", cat: "tech", code: "GRM-TEC-003", era: "2020s", desc: "การประมวลผลด้วย Quantum Superposition และ Entanglement", takeaway: "คิดแบบขนาน (Parallel Thinking) มองทางเลือกได้มากกว่าหนึ่งพร้อมกัน", sources: "MIT Tech Review" },
+        { id: "hist1", name: "Library of Alexandria", cat: "history", code: "GRM-HIS-004", era: "300 BC", desc: "ศูนย์กลางการรวบรวมภูมิปัญญาสากลยุคโบราณที่สาบสูญ", takeaway: "จัดระบบบันทึกความรู้ส่วนตัว (Second Brain) ป้องกันข้อมูลสูญหาย", sources: "Alexandria Archives" },
+        { id: "hist2", name: "Silk Road Trade", cat: "history", code: "GRM-HIS-005", era: "130 BC", desc: "เส้นทางเชื่อมวัฒนธรรม เทคโนโลยี และการค้าระหว่างตะวันออกกับตะวันตก", takeaway: "การแลกเปลี่ยนข้ามแผนกนำมาซึ่งนวัตกรรมใหม่เสมอ", sources: "UNESCO History" },
+        { id: "tech1", name: "Antigravity AI", cat: "tech", code: "GRM-TEC-006", era: "2026", desc: "ระบบผู้ช่วย Agentic Coding อัจฉริยะที่ร่วมคิดและสร้างผลงานแบบเคียงข้าง", takeaway: "ใช้ AI เป็นคู่คิดเพื่อทลายขีดจำกัดความเร็วในการสร้างสรรค์", sources: "Google DeepMind" },
+        { id: "tech2", name: "Knowledge Graphs", cat: "tech", code: "GRM-TEC-007", era: "2012", desc: "โครงสร้างข้อมูลเชิงความหมายที่เชื่อมโยงสิ่งต่างๆ เข้าด้วยกัน", takeaway: "มองปัญหาแบบเครือข่ายความสัมพันธ์ แทนที่จะมองเป็นเส้นตรง", sources: "W3C Semantic Web" },
+        { id: "cult1", name: "Ancient Fermentation", cat: "culture", code: "GRM-CUL-008", era: "4000 BC", desc: "ภูมิปัญญาการหมักดองอาหารเพื่อยืดอายุและเสริมโปรไบโอติก", takeaway: "ทานอาหารหมักดองธรรมชาติ 1 ช้อนต่อวัน เสริมสร้างจุลินทรีย์ในลำไส้", sources: "Archaeological Food Lab" },
+        { id: "cult2", name: "Stoic Philosophy", cat: "culture", code: "GRM-CUL-009", era: "300 BC", desc: "ปรัชญาการแยกแยะสิ่งที่ควบคุมได้และควบคุมไม่ได้เพื่อความสงบทางใจ", takeaway: "โฟกัสเฉพาะสิ่งที่เราจัดการได้ ลดความเครียดในที่ทำงานทันที", sources: "Marcus Aurelius Meditations" },
+        { id: "bio1", name: "Mycelium Network", cat: "bio", code: "GRM-BIO-010", era: "Ancient", desc: "เครือข่ายเส้นใยราใต้ดินที่ส่งสารอาหารและสื่อสารระหว่างต้นไม้ในป่า", takeaway: "ความร่วมมือแบบเกื้อกูลทำให้องค์กรอยู่รอดได้ดีกว่าการแข่งขันเดี่ยว", sources: "Forest Ecology Letters" },
+        { id: "bio2", name: "Circadian Rhythm", cat: "bio", code: "GRM-BIO-011", era: "Biological", desc: "นาฬิกาชีวภาพ 24 ชั่วโมงที่ควบคุมการหลั่งฮอร์โมนและการพักผ่อน", takeaway: "หลีกเลี่ยงแสงสีฟ้าก่อนนอน 1 ชั่วโมง เพิ่มคุณภาพการนอนหลับลึก", sources: "Nobel Prize Medicine 2017" },
+        { id: "art1", name: "Golden Ratio (Φ)", cat: "art", code: "GRM-ART-012", era: "Ancient Greece", desc: "สัดส่วนทองคำ 1:1.618 ที่สร้างความงามสมดุลในธรรมชาติและงานศิลปะ", takeaway: "ใช้สัดส่วน 60-30-10 ในการจัดองค์ประกอบภาพและสไลด์นำเสนอ", sources: "Renaissance Art Treatise" },
+        { id: "art2", name: "Bauhaus Functionalism", cat: "art", code: "GRM-ART-013", era: "1919", desc: "รูปทรงตามหน้าที่ (Form Follows Function) ผสานศิลปะเข้ากับอุตสาหกรรม", takeaway: "ตัดสิ่งที่ไม่จำเป็นออก ให้เหลือเฉพาะสาระสำคัญที่ใช้ประโยชน์ได้จริง", sources: "Bauhaus Archives" }
+      ],
+      links: [
+        { source: "sci1", target: "tech1", rel: "influenced" },
+        { source: "sci1", target: "bio2", rel: "derived_from" },
+        { source: "sci2", target: "cult1", rel: "used_in" },
+        { source: "tech2", target: "tech1", rel: "influenced" },
+        { source: "hist1", target: "tech2", rel: "derived_from" },
+        { source: "hist2", target: "cult1", rel: "used_in" },
+        { source: "bio1", target: "tech2", rel: "influenced" },
+        { source: "art1", target: "sci2", rel: "used_in" },
+        { source: "art2", target: "tech1", rel: "influenced" },
+        { source: "cult2", target: "sci1", rel: "influenced" }
+      ]
+    };
+
+    let forceSim, forceSvg, gZoom, zoomBehavior;
+    const catColors = {
+      science: "#2EE6FF",
+      history: "#FF5A1F",
+      tech: "#8C6BFF",
+      culture: "#FFC233",
+      bio: "#34E89E",
+      art: "#FF5FA2"
+    };
+
+    function initForceGraph() {
+      const container = document.getElementById('graph-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      forceSvg = d3.select('#force-graph-svg');
+      forceSvg.selectAll('*').remove();
+
+      zoomBehavior = d3.zoom().scaleExtent([0.4, 3]).on('zoom', (event) => {
+        gZoom.attr('transform', event.transform);
+      });
+      forceSvg.call(zoomBehavior);
+
+      gZoom = forceSvg.append('g');
+
+      // Simulation
+      forceSim = d3.forceSimulation(graphData.nodes)
+        .force('link', d3.forceLink(graphData.links).id(d => d.id).distance(110))
+        .force('charge', d3.forceManyBody().strength(-240))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(35));
+
+      // Draw links with relation dash styles
+      const link = gZoom.append('g')
+        .selectAll('line')
+        .data(graphData.links)
+        .enter()
+        .append('line')
+        .attr('stroke', 'rgba(46, 230, 255, 0.45)')
+        .attr('stroke-width', 1.8)
+        .attr('stroke-dasharray', d => {
+          if (d.rel === 'influenced') return null; // เส้นทึบ
+          if (d.rel === 'derived_from') return '6,4'; // เส้นประ
+          if (d.rel === 'used_in') return '2,4'; // เส้นจุด
+          return null;
+        });
+
+      // Draw nodes
+      const node = gZoom.append('g')
+        .selectAll('.kg-node')
+        .data(graphData.nodes)
+        .enter()
+        .append('g')
+        .attr('class', 'kg-node')
+        .style('cursor', 'pointer')
+        .call(d3.drag()
+          .on('start', dragstarted)
+          .on('drag', dragged)
+          .on('end', dragended))
+        .on('click', (event, d) => selectKGNode(d));
+
+      // Append distinct geometric shapes per category (Brief: Science=Circle, History=Hexagon, Tech=Square, Culture=Triangle, Bio=Diamond, Art=Ring)
+      node.each(function(d) {
+        const el = d3.select(this);
+        const col = catColors[d.cat] || '#D7FF3A';
+        
+        if (d.cat === 'science') {
+          // Circle
+          el.append('circle')
+            .attr('r', 16)
+            .attr('fill', col)
+            .attr('stroke', '#FFF')
+            .attr('stroke-width', 1.5);
+        } else if (d.cat === 'history') {
+          // Hexagon
+          const hexPoints = "-14,-8 0,-16 14,-8 14,8 0,16 -14,8";
+          el.append('polygon')
+            .attr('points', hexPoints)
+            .attr('fill', col)
+            .attr('stroke', '#FFF')
+            .attr('stroke-width', 1.5);
+        } else if (d.cat === 'tech') {
+          // Square
+          el.append('rect')
+            .attr('x', -14)
+            .attr('y', -14)
+            .attr('width', 28)
+            .attr('height', 28)
+            .attr('fill', col)
+            .attr('stroke', '#FFF')
+            .attr('stroke-width', 1.5);
+        } else if (d.cat === 'culture') {
+          // Triangle
+          el.append('polygon')
+            .attr('points', "0,-18 16,12 -16,12")
+            .attr('fill', col)
+            .attr('stroke', '#FFF')
+            .attr('stroke-width', 1.5);
+        } else if (d.cat === 'bio') {
+          // Diamond / Rhombus
+          el.append('polygon')
+            .attr('points', "0,-18 15,0 0,18 -15,0")
+            .attr('fill', col)
+            .attr('stroke', '#FFF')
+            .attr('stroke-width', 1.5);
+        } else if (d.cat === 'art') {
+          // Ring
+          el.append('circle')
+            .attr('r', 16)
+            .attr('fill', 'rgba(11,11,15,0.7)')
+            .attr('stroke', col)
+            .attr('stroke-width', 4);
+        }
+      });
+
+      node.append('text')
+        .text(d => d.name)
+        .attr('text-anchor', 'middle')
+        .attr('dy', 26)
+        .attr('fill', '#F2EDE3')
+        .attr('font-size', '11px')
+        .attr('font-family', 'var(--font-mono)');
+
+      forceSim.on('tick', () => {
+        link
+          .attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y);
+
+        node.attr('transform', d => `translate(${d.x}, ${d.y})`);
+      });
+
+      // Default select first node
+      selectKGNode(graphData.nodes[0]);
+    }
+
+    function selectKGNode(d) {
+      document.getElementById('kg-node-code').textContent = d.code;
+      document.getElementById('kg-node-cat').textContent = d.cat.toUpperCase();
+      document.getElementById('kg-node-cat').style.color = catColors[d.cat];
+      document.getElementById('kg-node-title').textContent = d.name;
+      document.getElementById('kg-node-era').textContent = `ERA: ${d.era.toUpperCase()}`;
+      document.getElementById('kg-node-desc').textContent = d.desc;
+      document.getElementById('kg-node-takeaway').textContent = d.takeaway;
+      document.getElementById('kg-node-sources').textContent = d.sources;
+
+      playBeep(750, 0.04);
+    }
+
+    function filterGraph(category) {
+      const pills = document.querySelectorAll('.cat-pill');
+      pills.forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (!gZoom) return;
+      if (category === 'all') {
+        gZoom.selectAll('.kg-node').style('opacity', 1);
+        gZoom.selectAll('line').style('opacity', 1);
+      } else {
+        gZoom.selectAll('.kg-node').style('opacity', d => d.cat === category ? 1 : 0.15);
+        gZoom.selectAll('line').style('opacity', 0.15);
+      }
+      playBeep(650, 0.05);
+    }
+
+    function zoomInGraph() {
+      if (forceSvg && zoomBehavior) forceSvg.transition().call(zoomBehavior.scaleBy, 1.3);
+    }
+    function zoomOutGraph() {
+      if (forceSvg && zoomBehavior) forceSvg.transition().call(zoomBehavior.scaleBy, 0.7);
+    }
+    function resetGraph() {
+      if (forceSvg && zoomBehavior) forceSvg.transition().call(zoomBehavior.transform, d3.zoomIdentity);
+    }
+
+    function triggerBoomFromKG() {
+      goToSlide(4);
+    }
+
+    function dragstarted(event, d) {
+      if (!event.active) forceSim.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+    function dragended(event, d) {
+      if (!event.active) forceSim.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      updateSlide();
+    });
+  </script>
+</body>
+</html>
